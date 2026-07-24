@@ -8,13 +8,31 @@ Claude Code와 Codex가 동일한 `SKILL.md`를 사용합니다. 제품별 매�
 
 스킬은 기존 논리와 디자인을 억지로 밈으로 바꾸지 않습니다. 왼쪽의 문제 제시 슬라이드를 그대로 보존하고, 가장 효과적인 지점에 오른쪽과 같은 짧은 밈 브레이크를 추가합니다.
 
+### 사례 1 — 반복 업무의 딜레마
+
 | 사용 전 — 내용은 명확하지만 호흡이 없음 | 사용 후 — 공감되는 유명 밈으로 메시지를 회수 |
 |---|---|
 | ![밈 삽입 전: 기관마다 다른 양식 때문에 같은 일을 반복한다는 문제를 설명하는 슬라이드](docs/images/before-meme.jpg) | ![밈 삽입 후: 두 버튼 밈으로 어느 기관 양식을 선택해도 다시 작성해야 하는 상황을 표현한 슬라이드](docs/images/after-meme.jpg) |
 
 이 예시에서는 `Two Buttons`의 익숙한 딜레마 문법을 사용해 “내용은 같은데 양식만 다르다”는 문제를 한눈에 기억하게 만듭니다. 원래 콘텐츠는 삭제하거나 축약하지 않았습니다.
 
-> 예시 템플릿: [Two Buttons · Imgflip](https://imgflip.com/meme/Two-Buttons). 문서용 저해상도 화면 예시이며, 실제 외부 배포 시에는 각 이미지의 이용 권리를 별도로 확인해야 합니다.
+### 사례 2 — 챗봇과 에이전트의 차이
+
+| 사용 전 — 개념 차이를 문장으로 설명 | 사용 후 — 익숙한 오인 밈으로 개념을 각인 |
+|---|---|
+| ![밈 삽입 전: 채팅과 에이전트의 차이를 텍스트로 설명하는 교육 슬라이드](docs/images/wezon-before.jpg) | ![밈 삽입 후: Is This a Pigeon 밈으로 채팅창을 에이전트로 오해하는 상황을 표현한 슬라이드](docs/images/wezon-after.jpg) |
+
+`Is This a Pigeon?`의 “잘못 알아보기” 문법을 사용해 “ChatGPT 채팅창이 곧 에이전트인가?”라는 교육 현장의 흔한 오해를 짧은 질문으로 바꿉니다. 다음 실습으로 넘어가기 전에 청중의 개념을 맞추는 `reaction` 역할입니다.
+
+### 사례 3 — 같은 AI가 자기 작업을 검수할 때
+
+| 사용 전 — 이종 AI 교차검증의 필요성을 설명 | 사용 후 — 불가능에 가까운 자기검수를 밈으로 회수 |
+|---|---|
+| ![밈 삽입 전: 서로 다른 AI의 관점이 서로 다른 맹점을 잡는다고 설명하는 슬라이드](docs/images/week8-before.jpg) | ![밈 삽입 후: One Does Not Simply 밈으로 자기 초안을 스스로 교차검증하기 어렵다는 점을 표현한 슬라이드](docs/images/week8-after.jpg) |
+
+`One Does Not Simply`의 “말처럼 간단하지 않다”는 문법을 사용해 자기검수의 한계를 회수합니다. 원래 협업 방식 설명은 보존하고, 회고 슬라이드로 넘어가기 직전에 `analogy` 역할의 밈 슬라이드를 추가했습니다.
+
+> 예시 템플릿: [Two Buttons](https://imgflip.com/meme/Two-Buttons), [Is This a Pigeon?](https://imgflip.com/meme/Is-This-A-Pigeon), [One Does Not Simply](https://imgflip.com/memetemplate/One-Does-Not-Simply) · Imgflip. 문서용 저해상도 화면 예시이며, 실제 외부 배포 시에는 각 이미지의 이용 권리를 별도로 확인해야 합니다.
 
 ## 설치
 
