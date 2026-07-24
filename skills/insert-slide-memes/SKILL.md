@@ -7,6 +7,8 @@ description: Plan, select, and add restrained, context-aware, widely recognizabl
 
 Use humor as pacing, analogy, reaction, or callback. Keep the deck's argument primary.
 
+Resolve `references/` and `scripts/` relative to the directory containing this `SKILL.md`. Do not assume the current working directory is the plugin root.
+
 ## Select a mode
 
 Honor an explicitly requested mode. Otherwise:
@@ -42,7 +44,7 @@ Honor an explicitly requested mode. Otherwise:
    - Preserve `data-meme-source` metadata in either case.
 7. Render every changed slide and its neighbors at the target viewport and one smaller viewport.
 8. Verify keyboard navigation, image loading, overflow, and browser console output.
-9. Run `python3 scripts/audit_memes.py path/to/deck.html --strict`.
+9. Run `python3 <skill-root>/scripts/audit_memes.py path/to/deck.html --strict`.
 10. Report changed slides, why each joke belongs, asset sources, reuse status, and packaging.
 
 ## Mode: `plan-and-build`

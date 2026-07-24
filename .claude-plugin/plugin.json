@@ -1,0 +1,19 @@
+{
+  "name": "slide-meme-inserter",
+  "description": "HTML 슬라이드의 기획 단계부터 밈을 설계하거나 완성된 덱에 유명 밈을 절제해 삽입하는 Claude Code 플러그인입니다.",
+  "version": "0.1.0",
+  "author": {
+    "name": "amnotyoung",
+    "url": "https://github.com/amnotyoung"
+  },
+  "homepage": "https://github.com/amnotyoung/slide-meme-inserter",
+  "repository": "https://github.com/amnotyoung/slide-meme-inserter",
+  "license": "MIT",
+  "keywords": [
+    "html-slides",
+    "memes",
+    "presentation",
+    "claude-code-plugin",
+    "slide-generation"
+  ]
+}
