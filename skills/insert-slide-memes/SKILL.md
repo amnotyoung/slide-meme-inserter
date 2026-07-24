@@ -1,6 +1,6 @@
 ---
 name: insert-slide-memes
-description: Plan, select, and add restrained, context-aware, widely recognizable memes to HTML slide decks in two modes. Use postprocess mode when Codex receives a completed HTML deck and must insert or revise memes without weakening its message, layout, accessibility, or navigation. Use plan-and-build mode when Codex is planning or generating a new HTML presentation and should decide meme timing, candidates, captions, and layout as part of the storyline before building the deck. Search across languages and meme cultures; select by communicative fit and audience recognition rather than the deck language. Trigger for requests to create funnier HTML slides, add memes or comic relief, plan humor beats, generate a meme-aware deck, or review existing meme placement.
+description: Plan, select, and add restrained, context-aware, widely recognizable memes to HTML slide decks in two modes. Use postprocess mode when Codex receives a completed HTML deck and must insert or revise memes without weakening its message, layout, accessibility, or navigation. Use plan-and-build mode when Codex is planning or generating a new HTML presentation and should decide meme timing, candidates, captions, and layout as part of the storyline before building the deck. Accept user-supplied meme images, local files, URLs, template names, captions, and placement instructions in either mode; prioritize them without skipping rights, safety, accessibility, or rendering checks. Search across languages and meme cultures when the user has not fixed the asset. Trigger for requests to create funnier HTML slides, add supplied or searched memes, plan humor beats, generate a meme-aware deck, or review existing meme placement.
 ---
 
 # Insert Slide Memes
@@ -20,20 +20,21 @@ Honor an explicitly requested mode. Otherwise:
 
 1. Infer audience, setting, language, formality, shared references, and humor tolerance.
 2. Read [references/meme-playbook.md](references/meme-playbook.md).
-3. Define the communicative job before searching for an image.
-4. Compare candidates from global, regional, and language-specific meme ecosystems.
-5. Prefer an established, recognizable template. Do not generate an original meme unless the user explicitly asks.
-6. Localize the caption while preserving the template's familiar meaning.
-7. Verify the source and reuse status. Download chosen assets; never hotlink third-party images.
-8. Default to roughly one meme per 5–7 content slides, cap at three unless requested otherwise, and use at most one meme per slide.
-9. Reject a meme that decorates, repeats the slide, needs explanation, targets a person or group, or weakens the presenter's credibility.
+3. Read [references/user-provided-memes.md](references/user-provided-memes.md) when the user supplies any asset, URL, template name, caption, or placement instruction.
+4. Define the communicative job before searching for an image.
+5. Compare candidates from global, regional, and language-specific meme ecosystems only when the exact asset is not user-locked.
+6. Prefer an established, recognizable template. Do not generate an original meme unless the user explicitly asks.
+7. Localize the caption while preserving the template's familiar meaning.
+8. Verify the source and reuse status. Download chosen assets; never hotlink third-party images.
+9. Default to roughly one meme per 5–7 content slides, cap at three unless requested otherwise, and use at most one meme per slide. Honor an explicit user count while warning if it materially weakens the deck.
+10. Reject a searched candidate that decorates, repeats the slide, needs explanation, targets a person or group, or weakens the presenter's credibility. For a user-supplied asset, flag the concrete concern but do not silently replace it.
 
 ## Mode: `postprocess`
 
 1. Inspect the complete deck, assets, framework, slide boundaries, navigation, stable identifiers, and intended viewport.
 2. Identify high-value release, analogy, callback, and transition moments without changing the deck's argument.
 3. Create a short internal meme plan using the fields in **Meme plan**.
-4. Search, score, source, and download only the selected recognizable templates.
+4. Use user-supplied assets and instructions first. Search, score, source, and download templates only for unresolved placements.
 5. Insert semantic markup and scoped CSS. Preserve the existing slide system, stable IDs, visual language, and keyboard behavior.
 6. Choose the packaging method:
    - Default to relative local assets beside the deck.
@@ -52,7 +53,7 @@ Read [references/plan-and-build.md](references/plan-and-build.md), then:
 2. Build a content-first outline. Give every slide a narrative job and one primary message.
 3. Mark only the moments that benefit from release, analogy, callback, or transition. Do not place memes at fixed intervals.
 4. Add provisional meme briefs to the outline before choosing exact assets. Keep content slides understandable if every meme is removed.
-5. Search and compare recognizable candidates only after the surrounding argument is clear. Record the winner, localized caption, source, reuse status, layout, and risk.
+5. Apply user-supplied assets and instructions to the relevant outline records. Search and compare recognizable candidates only for unresolved placements after the surrounding argument is clear. Record the winner, localized caption, source, reuse status, layout, and risk.
 6. Treat outline approval already required by the presentation workflow as approval of the meme beats too. Add a separate approval gate only for material tone, reputational, or rights risk.
 7. Generate the complete HTML deck with the selected meme moments included. Use stable slide identifiers from the first build.
 8. Apply the same packaging, markup, guardrail, rendering, and audit requirements as `postprocess`.
@@ -66,6 +67,8 @@ For each proposed placement record:
 - slide identifier and narrative job
 - role: `reaction`, `analogy`, `callback`, or `transition`
 - intended audience response
+- origin: `user-provided` or `searched`
+- user-locked fields such as asset, template, caption, or placement
 - candidates considered across cultures and why the winner is most recognizable
 - caption or setup, preferably under 12 words
 - source and reuse status
@@ -81,7 +84,8 @@ Use this structure when the deck permits it:
 <figure
   class="slide-meme"
   data-meme-role="reaction"
-  data-meme-source="https://source.example/template-page"
+  data-meme-source="SOURCE_URL_HERE"
+  data-meme-origin="searched"
 >
   <img
     src="assets/memes/recognized-template.jpg"
@@ -91,7 +95,7 @@ Use this structure when the deck permits it:
 </figure>
 ```
 
-Use a verified source page or a short project-owned marker in `data-meme-source`. Keep meaningful alternative text distinct from the joke caption. Use `alt=""` only for a truly decorative image.
+Use a verified source page or a short marker such as `user-provided` or `project-owned` in `data-meme-source`. Set `data-meme-origin="user-provided"` for user-supplied assets and `searched` for assets selected by the skill. Keep meaningful alternative text distinct from the joke caption. Use `alt=""` only for a truly decorative image.
 
 Scope styles under the deck or `.slide-meme` namespace:
 

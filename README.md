@@ -9,6 +9,8 @@ HTML 슬라이드를 기획·생성하거나 기존 덱을 후처리하면서, �
 
 사용자가 모드를 지정하면 그대로 따릅니다. 모드가 없으면 기존 HTML이 입력된 경우 `postprocess`, 주제·자료·구성안에서 새 덱을 만드는 경우 `plan-and-build`를 선택합니다.
 
+두 모드 모두 사용자가 직접 제공한 밈 이미지, URL, 템플릿명, 캡션, 희망 위치를 받을 수 있습니다. 제공된 항목은 우선 보존하고, 비어 있는 항목만 스킬이 문맥에 맞게 보완합니다.
+
 ## 원칙
 
 - 오리지널 밈보다 청중이 바로 알아보는 기존 밈을 우선합니다.
@@ -25,7 +27,8 @@ skills/insert-slide-memes/
 ├── agents/openai.yaml
 ├── references/
 │   ├── meme-playbook.md
-│   └── plan-and-build.md
+│   ├── plan-and-build.md
+│   └── user-provided-memes.md
 └── scripts/audit_memes.py
 ```
 

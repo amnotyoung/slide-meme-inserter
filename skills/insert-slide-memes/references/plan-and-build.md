@@ -2,6 +2,14 @@
 
 Use this reference only when planning and generating a new meme-aware HTML deck.
 
+## Contents
+
+- Planning order
+- Outline record
+- Placement logic
+- Candidate commitment
+- Plan-to-HTML mapping
+
 ## Planning order
 
 Plan in this order:
@@ -29,6 +37,7 @@ Represent each slide with this minimum structure. It may remain an internal work
     - "동일 프롬프트 반복 실행 예시"
   meme:
     status: provisional
+    origin: searched
     role: reaction
     intended_response: "우리도 겪었다는 공감"
     search_job: "같은 입력인데 결과가 달라 혼란스러운 상황"
@@ -50,6 +59,8 @@ Use `meme: null` when a slide has no humor job. Allowed status values:
 - `provisional`: the narrative moment is selected but the asset may change
 - `selected`: the asset, caption, source, and layout are ready to build
 - `dropped`: the idea failed recognition, tone, rights, or layout review
+
+When the user supplies a meme asset or instruction, add `origin: user-provided` and a `user_locked` map for asset, placement, caption, and layout. Do not run candidate search for a locked exact asset.
 
 ## Placement logic
 
@@ -88,6 +99,7 @@ Drop the meme instead of forcing a weak candidate.
 - Preserve the outline `id` as the stable slide identifier.
 - Map `role` to `data-meme-role`.
 - Map `source` to `data-meme-source`.
+- Map `origin` to `data-meme-origin`.
 - Put localized punchline text in HTML, not only inside the raster image.
 - Keep `alt` text descriptive rather than duplicating the punchline.
 - Store downloaded assets under a deck-local path such as `assets/memes/`.
