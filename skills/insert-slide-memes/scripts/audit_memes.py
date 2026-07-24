@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import math
 from html.parser import HTMLParser
 from pathlib import Path
@@ -71,7 +73,17 @@ class DeckParser(HTMLParser):
 
 
 def is_remote(src: str) -> bool:
-    return urlparse(src).scheme in {"http", "https", "data"}
+    return urlparse(src).scheme in {"http", "https"}
+
+
+def valid_embedded_image(src: str) -> bool:
+    header, separator, payload = src.partition(",")
+    if not separator or not header.startswith("data:image/") or not header.endswith(";base64"):
+        return False
+    try:
+        return bool(base64.b64decode(payload, validate=True))
+    except (binascii.Error, ValueError):
+        return False
 
 
 def audit(path: Path, max_density: float) -> tuple[list[str], list[str], DeckParser]:
@@ -110,8 +122,11 @@ def audit(path: Path, max_density: float) -> tuple[list[str], list[str], DeckPar
             src = image["src"]
             if not src:
                 errors.append(f"{label}: image has an empty src.")
+            elif src.startswith("data:"):
+                if not valid_embedded_image(src):
+                    errors.append(f"{label}: image has an invalid embedded data URL.")
             elif is_remote(src):
-                warnings.append(f"{label}: image uses a remote or embedded URL; prefer a local file.")
+                warnings.append(f"{label}: image uses a remote URL; download it locally.")
             else:
                 local_path = (path.parent / src).resolve()
                 if not local_path.is_file():

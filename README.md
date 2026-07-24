@@ -1,6 +1,13 @@
 # Slide Meme Inserter
 
-기존 HTML 슬라이드에 맥락과 청중에 맞는 유명 밈을 절제해 삽입하는 Codex 스킬입니다.
+HTML 슬라이드를 기획·생성하거나 기존 덱을 후처리하면서, 맥락과 청중에 맞는 유명 밈을 절제해 삽입하는 Codex 스킬입니다.
+
+## 모드
+
+- `postprocess`: 완성된 HTML의 논리와 디자인을 보존하며 밈을 삽입하거나 교체합니다.
+- `plan-and-build`: 슬라이드 기획부터 밈의 역할·위치·후보·캡션을 함께 설계하고 HTML을 생성합니다.
+
+사용자가 모드를 지정하면 그대로 따릅니다. 모드가 없으면 기존 HTML이 입력된 경우 `postprocess`, 주제·자료·구성안에서 새 덱을 만드는 경우 `plan-and-build`를 선택합니다.
 
 ## 원칙
 
@@ -16,7 +23,9 @@
 skills/insert-slide-memes/
 ├── SKILL.md
 ├── agents/openai.yaml
-├── references/meme-playbook.md
+├── references/
+│   ├── meme-playbook.md
+│   └── plan-and-build.md
 └── scripts/audit_memes.py
 ```
 

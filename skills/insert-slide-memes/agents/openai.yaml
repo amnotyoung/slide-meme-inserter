@@ -1,4 +1,4 @@
 interface:
   display_name: "Slide Meme Inserter"
-  short_description: "Find the best-known memes across cultures for HTML slides"
-  default_prompt: "Use $insert-slide-memes to find and insert the most recognizable, context-perfect memes for this HTML slide deck, regardless of language."
+  short_description: "Plan or retrofit recognizable memes in HTML decks"
+  default_prompt: "Use $insert-slide-memes to choose postprocess or plan-and-build mode and add context-perfect, widely recognizable memes to an HTML slide deck."
