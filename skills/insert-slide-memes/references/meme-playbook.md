@@ -58,7 +58,21 @@ Use these levels in order. A page found at one level is evidence for that level 
 4. **Determine asset reuse**
    - Check the original page's license, terms, permission, or downloadable press assets separately from provenance.
    - Treat TV, film, webtoon, creator-video, and celebrity stills as `rights unclear` unless reuse permission is explicit. Finding the original does not grant permission.
-   - For internal use with unresolved rights, record the warning and distribution limit. For public distribution, use only a cleared asset or drop the candidate.
+   - For internal training with unresolved rights, use the capture fallback below when appropriate and record the warning and distribution limit.
+   - For public distribution, use only a cleared asset or drop the candidate.
+
+### Internal-training capture fallback
+
+Allow a single still captured from an official broadcaster, publisher, or creator-controlled source when all of these conditions are met:
+
+1. The deck is explicitly for internal training or another non-public session.
+2. The original source has been traced and recorded.
+3. The capture is the minimum frame needed for the meme and does not remove logos, watermarks, credits, or context needed for honest attribution.
+4. The source is normally accessible; do not bypass login restrictions, paywalls, DRM, download controls, or other technical protections.
+5. Record the exact source URL and timestamp, set `reuse_status: "rights unclear"`, and set `distribution_limit: "internal only"`.
+6. Warn that recordings, exported PDFs, shared HTML files, and later uploads remain internal-only unless the asset is replaced or permission is obtained.
+
+Prefer a user-provided local image when the user already has the desired Korean meme. Preserve that original, copy it into the deck-local asset folder, and record its rights as unverified unless the user supplies permission information.
 
 Record the result as:
 
