@@ -42,11 +42,17 @@ Represent each slide with this minimum structure. It may remain an internal work
     intended_response: "우리도 겪었다는 공감"
     search_job: "같은 입력인데 결과가 달라 혼란스러운 상황"
     candidates:
-      - "Confused Math Lady"
-      - "Surprised Pikachu"
-      - "Jackie Chan WTF"
-    selected: "Confused Math Lady"
-    selection_reason: "복수 결과를 합치려는 혼란과 가장 정확히 맞는다"
+      - {template: "<global candidate 1>", source: "<verified-source-url>", ecosystem: global}
+      - {template: "<global candidate 2>", source: "<verified-source-url>", ecosystem: global}
+      - {template: "<regional candidate 1>", source: "<verified-source-url>", ecosystem: regional}
+      - {template: "<regional candidate 2>", source: "<verified-source-url>", ecosystem: regional}
+      - {template: "<professional candidate 1>", source: "<verified-source-url>", ecosystem: professional}
+      - {template: "<professional candidate 2>", source: "<verified-source-url>", ecosystem: professional}
+    score: "13/14"
+    ubiquity_penalty: 0
+    adjusted_score: "13/14"
+    selected: "<highest-adjusted-score candidate>"
+    selection_reason: "이 청중에게 신선하면서도 의미가 가장 정확하다"
     caption: "프롬프트는 같았는데 정답이 세 개입니다"
     source: "<verified-source-url>"
     reuse_status: "rights unclear; internal-use warning"
@@ -90,7 +96,9 @@ Keep the humor job provisional while planning the outline. Commit to an exact te
 3. its established meaning matches the message;
 4. the caption works without explaining the template;
 5. the asset source and reuse status are recorded; and
-6. the layout can survive the target and smaller viewport.
+6. the candidate slate contains concrete, sourced options from the required ecosystems;
+7. novelty/fatigue and any ubiquity penalty have been recorded; and
+8. the layout can survive the target and smaller viewport.
 
 Drop the meme instead of forcing a weak candidate.
 

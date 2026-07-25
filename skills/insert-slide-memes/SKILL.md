@@ -24,10 +24,10 @@ Honor an explicitly requested mode. Otherwise:
 2. Read [references/meme-playbook.md](references/meme-playbook.md).
 3. Read [references/user-provided-memes.md](references/user-provided-memes.md) when the user supplies any asset, URL, template name, caption, or placement instruction.
 4. Define the communicative job before searching for an image.
-5. Compare candidates from global, regional, and language-specific meme ecosystems only when the exact asset is not user-locked.
+5. For every unresolved placement, compare sourced candidates from globally common, regional or language-specific, and relevant professional or community meme ecosystems. Follow the minimum candidate slate in the playbook; do not satisfy it with vague categories or invented examples.
 6. Prefer an established, recognizable template. Do not generate an original meme unless the user explicitly asks.
 7. Localize the caption while preserving the template's familiar meaning.
-8. Verify the source and reuse status. Download chosen assets; never hotlink third-party images.
+8. Verify the source and reuse status. For Korean candidates, follow the Korean source hierarchy and static-image workflow in the playbook instead of treating a search result or repost as provenance. Download chosen image assets locally; never hotlink third-party images or capture frames from video.
 9. Default to roughly one meme per 5–7 content slides, cap at three unless requested otherwise, and use at most one meme per slide. Honor an explicit user count while warning if it materially weakens the deck.
 10. Reject a searched candidate that decorates, repeats the slide, needs explanation, targets a person or group, or weakens the presenter's credibility. For a user-supplied asset, flag the concrete concern but do not silently replace it.
 
@@ -72,6 +72,7 @@ For each proposed placement record:
 - origin: `user-provided` or `searched`
 - user-locked fields such as asset, template, caption, or placement
 - candidates considered across cultures and why the winner is most recognizable
+- candidate source or search evidence, novelty/fatigue score, and any ubiquity penalty
 - caption or setup, preferably under 12 words
 - source and reuse status
 - layout and primary-content tradeoff
