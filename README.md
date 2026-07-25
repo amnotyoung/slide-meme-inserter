@@ -10,6 +10,7 @@ Claude Code와 Codex가 동일한 `SKILL.md`를 사용합니다. 제품별 매�
 - 특정 유명 밈의 반복 선택을 줄이는 다양성 기준을 추가했습니다.
 - 외부·공유·녹화에는 `strict`, 일회성 사내 현장 발표에는 제한된 `practical` 권리 모드를 제공합니다.
 - 실제 밈을 적용한 저해상도 전후 사례와 출처·이용 판단 기록을 복원했습니다.
+- 글로벌 밈 후보는 Imgflip에서 먼저 찾고, Know Your Meme는 의미·유래 검증에 사용하도록 출처 역할을 분리했습니다.
 
 전체 변경 내역은 [CHANGELOG.md](CHANGELOG.md)를 참고하세요.
 
@@ -132,13 +133,24 @@ Plan restrained meme beats and build the HTML deck.
 
 사용자가 직접 제공한 이미지·URL·템플릿명·캡션·희망 위치는 두 워크플로 모드에서 모두 우선 보존합니다. 비어 있는 항목만 문맥에 맞게 보완하며, 사용자 제공 자체를 이용허락으로 간주하지 않습니다.
 
+## 밈을 찾는 순서
+
+재미있는 후보를 찾는 일과 출처·권리를 검증하는 일을 분리합니다.
+
+1. **Imgflip 우선 탐색:** 글로벌하게 알려진 형식은 Imgflip의 템플릿과 현재 캡션 변주를 먼저 살펴봅니다. 실제로 어떤 리듬과 대비가 웃기는지 비교하되 다른 사용자의 독창적인 캡션을 그대로 복사하지 않습니다.
+2. **의미 검증:** 후보를 좁힌 뒤 Know Your Meme 또는 유지되는 맥락 자료로 형식의 통상적 의미와 확산 이력을 확인합니다.
+3. **원출처 추적:** 창작자·배급사·원게시물에서 원작과 날짜를 별도로 확인합니다.
+4. **권리 검토:** Imgflip이나 Know Your Meme에 공개되어 있다는 사실과 무관하게, 선택한 사용 범위에 맞는 `strict` 법적 근거나 `practical` 검토를 기록합니다.
+
+검색 후보의 JSON 계획에는 `discovery_route`, `discovery_source`, `humor_evidence`를 기록합니다. 기본값은 `imgflip-first`입니다. 한국 고유 밈처럼 Imgflip의 대표성이 낮으면 `regional-first`, 적합한 결과가 없으면 `fallback-other`를 사용하고 `discovery_fallback_reason`을 추가합니다.
+
 ## 계획의 권리 필드
 
 실행 가능한 JSON 계획은 루트에 `rights_mode`를 기록합니다. 아래는 practical 배치에서 권리 관련 필드만 발췌한 예시이며, 이것만으로는 전체 계획 감사를 통과하지 않습니다. 전체 배치 스키마는 [`plan-and-build.md`](skills/insert-slide-memes/references/plan-and-build.md)를 참고하세요.
 
 ```json
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "audience": "사내 교육 참석자",
   "rights_mode": "practical",
   "placements": [
@@ -254,6 +266,7 @@ Use $insert-slide-memes to add memes to slides.html.
 ## 원칙
 
 - 오리지널 밈보다 청중이 바로 알아보는 기존 밈을 우선합니다.
+- 글로벌 후보는 Imgflip의 활발한 변주에서 먼저 찾고, Know Your Meme는 의미와 유래 검증에 사용합니다.
 - 언어권을 제한하지 않고 문맥 적합성과 인지도를 기준으로 선택합니다.
 - 월페이퍼·홍보 이미지·팬덤 이미지는 문구가 맞더라도 검색 밈으로 사용하지 않습니다.
 - 게임·스포츠·정치 등 발표자의 취향이나 정체성을 암시하는 후보는 청중 근거와 사용자 승인이 없으면 탈락시킵니다.

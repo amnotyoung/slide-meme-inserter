@@ -36,22 +36,44 @@ Record every dimension separately. Insert only candidates that passed every hard
 
 Score novelty only after semantic precision and audience recognition pass. Freshness never compensates for obscurity, weak meaning, or identity risk.
 
+## Active-humor discovery order
+
+Separate the source roles instead of asking one site to perform every job:
+
+| Source role | Preferred source | What it establishes |
+|---|---|---|
+| Candidate discovery and comic execution | Imgflip template pages and current caption variants | Active formats, variation, caption rhythm, and fatigue signals |
+| Meaning and spread | Know Your Meme or another maintained contextual source | Established semantics, recurring use, and recognition history |
+| Original provenance | Creator- or publisher-controlled source | Creator, work, episode, post, and date |
+| Asset and legal evidence | Direct asset page, license, permission, terms, or statutory-exception record | The exact file and the legal basis for the planned use |
+
+Use this discovery sequence:
+
+1. Define the communicative job before opening a meme site.
+2. For globally established formats, search Imgflip first using the situation, reaction, and likely template names. Compare several distinct templates when credible options exist; inspect current variants for comic structure without copying their punchlines.
+3. Record `discovery_route: "imgflip-first"`, the direct Imgflip page as `discovery_source`, and a concrete `humor_evidence` note explaining why the format supports a concise joke for this slide.
+4. Write a new slide-specific caption. Do not reproduce a distinctive user caption verbatim unless the user supplied it or its use is separately justified and attributed.
+5. Verify the shortlisted template's conventional meaning and origin with Know Your Meme or a comparably maintained contextual source. Do not use Know Your Meme's example gallery as the default humor pool.
+6. Use `regional-first` when the target culture or language has a recognizable format that Imgflip represents poorly. Use `fallback-other` when Imgflip is unavailable or returns no credible semantic match. Record `discovery_fallback_reason` for either route.
+7. Apply hard gates and scoring after discovery. Active popularity is evidence of use, not proof of audience fit, quality, permission, or legal reuse.
+
+Imgflip-first is a discovery default, not a source monopoly. Honor a user-provided template or asset, and drop an Imgflip candidate when a regional or professional-community format is demonstrably funnier and more recognizable to the audience.
+
 ## Cross-language search
 
 Treat language as a search dimension, not a selection rule.
 
 1. Define the precise communicative job: reaction, dilemma, reversal, escalation, false confidence, shared pain, or transition.
 2. Search current sources using:
-   - the deck language
-   - English and globally common meme terminology
+   - Imgflip in the deck language and English or globally common meme terminology
    - relevant regional or professional-community vocabulary when the audience is likely to know it
 3. Explore globally common, regional or language-specific, and workplace, professional, or relevant community ecosystems when they plausibly fit the audience. This is coverage, not a quota.
 4. Record a concrete template name and semantic source for every candidate. Do not count an unnamed category such as “Korean reaction image” as a candidate.
 5. If an ecosystem has no credible candidate, record that result and move on. Do not replace it merely to fill a category, and do not treat an empty or fully rejected slate as failure.
-6. Do not add an original, generated, or directly produced meme to the candidate slate unless the user explicitly requests one.
+6. Do not add a new visual format, generated image, or unrelated original illustration to the candidate slate unless the user explicitly requests one. A new slide-specific caption on an established template is an adaptation, not a new visual format.
 7. Eliminate candidates that depend on a niche community, untranslated wordplay, fandom, or cultural knowledge without audience evidence or explicit user approval.
 8. Apply the hard gates, then score only the survivors and apply the ubiquity penalty.
-9. Break ties by semantic precision, audience recognition, novelty/fatigue, caption brevity, rights clarity, and asset quality—in that order.
+9. Break ties by semantic precision, audience recognition, demonstrated comic execution, novelty/fatigue, caption brevity, rights clarity, and asset quality—in that order.
 
 Do not prefer a Korean meme for Korean slides or an English meme for English slides merely because the languages match. A globally known template with a localized caption can outperform a same-language reference, and a regional meme can win when the audience clearly recognizes it.
 
@@ -96,6 +118,9 @@ Record the result as:
 
 ```yaml
 discovery_source: "<trend index, search result, or community URL>"
+discovery_route: "regional-first"
+discovery_fallback_reason: "<why Imgflip is a poor discovery pool for this candidate>"
+humor_evidence: "<why the active format supports a concise joke for this slide>"
 semantic_sources:
   - "<meaning or spread source>"
 original_source:
@@ -171,6 +196,7 @@ For external assets:
 3. Audit the plan before downloading a suitable local copy.
 4. Record the source URL, mode-appropriate evidence, and attribution location.
 5. Do not treat search-result availability, source credit, user provision, or internal use as permission.
+6. Treat Imgflip as discovery and generation infrastructure unless separate evidence establishes a broader legal basis.
 
 ## Layout patterns
 
