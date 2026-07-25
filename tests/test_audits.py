@@ -220,5 +220,62 @@ class HtmlPlanCrossCheckTests(unittest.TestCase):
             self.assertIn("plan expects 'https://example.com/confused-travolta-meaning'", joined)
 
 
+class DensityAuditTests(unittest.TestCase):
+    def write_deck(
+        self,
+        directory: Path,
+        slide_count: int,
+        meme_slides: set[int],
+    ) -> Path:
+        image_path = directory / "meme.jpg"
+        image_path.write_bytes(b"test-image")
+        sections = []
+        for slide_number in range(1, slide_count + 1):
+            figure = ""
+            if slide_number in meme_slides:
+                figure = f"""
+                  <figure
+                    class="slide-meme"
+                    data-meme-role="reaction"
+                    data-meme-source="user-provided"
+                    data-meme-origin="user-provided"
+                  >
+                    <img src="meme.jpg" alt="A recognizable reaction" />
+                    <figcaption>Reaction {slide_number}</figcaption>
+                  </figure>
+                """
+            sections.append(
+                f'<section id="s{slide_number:02d}">{figure}</section>'
+            )
+        html_path = directory / "deck.html"
+        html_path.write_text("\n".join(sections), encoding="utf-8")
+        return html_path
+
+    def test_long_deck_may_exceed_three_memes_when_density_allows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = self.write_deck(
+                Path(tmp),
+                slide_count=60,
+                meme_slides={8, 20, 34, 49},
+            )
+            errors, warnings, parser = audit(html_path, 0.10)
+            self.assertEqual(errors, [])
+            self.assertEqual(warnings, [])
+            self.assertEqual(len(parser.memes), 4)
+
+    def test_density_ceiling_scales_down_for_short_decks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = self.write_deck(
+                Path(tmp),
+                slide_count=12,
+                meme_slides={2, 6, 10},
+            )
+            errors, warnings, _ = audit(html_path, 0.10)
+            self.assertEqual(errors, [])
+            self.assertTrue(
+                any("density ceiling allows about 2" in warning for warning in warnings)
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
