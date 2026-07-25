@@ -11,6 +11,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
 
+from audit_meme_plan import load_and_audit_plan
+
 
 SLIDE_TAGS = {"section", "article"}
 
@@ -44,8 +46,11 @@ class DeckParser(HTMLParser):
             if "slide-meme" in classes:
                 meme = {
                     "slide": self.slide_stack[-1] if self.slide_stack else None,
+                    "plan_id": attrs.get("data-meme-plan-id"),
                     "role": attrs.get("data-meme-role"),
+                    "template": attrs.get("data-meme-template"),
                     "source": attrs.get("data-meme-source"),
+                    "origin": attrs.get("data-meme-origin"),
                     "images": [],
                     "has_caption": False,
                 }
@@ -86,7 +91,11 @@ def valid_embedded_image(src: str) -> bool:
         return False
 
 
-def audit(path: Path, max_density: float) -> tuple[list[str], list[str], DeckParser]:
+def audit(
+    path: Path,
+    max_density: float,
+    plan_path: Path | None = None,
+) -> tuple[list[str], list[str], DeckParser]:
     parser = DeckParser()
     parser.feed(path.read_text(encoding="utf-8"))
     errors: list[str] = []
@@ -109,6 +118,8 @@ def audit(path: Path, max_density: float) -> tuple[list[str], list[str], DeckPar
         )
         if meme["role"] not in {"reaction", "analogy", "callback", "transition"}:
             errors.append(f"{label}: missing or invalid data-meme-role.")
+        if meme["origin"] not in {"searched", "user-provided"}:
+            errors.append(f"{label}: missing or invalid data-meme-origin.")
         if not meme["source"]:
             errors.append(f"{label}: missing data-meme-source.")
         if len(meme["images"]) != 1:
@@ -140,6 +151,64 @@ def audit(path: Path, max_density: float) -> tuple[list[str], list[str], DeckPar
                 f"density target allows about {allowed}."
             )
 
+    if plan_path is not None:
+        _, plan_errors, plan_warnings, selected = load_and_audit_plan(plan_path)
+        errors.extend(f"plan: {message}" for message in plan_errors)
+        warnings.extend(f"plan: {message}" for message in plan_warnings)
+
+        selected_by_id = {
+            record["id"]: record
+            for record in selected
+            if isinstance(record.get("id"), str) and record["id"]
+        }
+        html_by_id: dict[str, dict] = {}
+        for index, meme in enumerate(parser.memes, 1):
+            plan_id = meme["plan_id"]
+            label = (
+                parser.slides[meme["slide"]]["id"]
+                if meme["slide"] is not None
+                else f"meme-{index}"
+            )
+            if not plan_id:
+                errors.append(f"{label}: missing data-meme-plan-id required by --plan.")
+                continue
+            if plan_id in html_by_id:
+                errors.append(f"{label}: duplicate data-meme-plan-id {plan_id}.")
+                continue
+            html_by_id[plan_id] = meme
+
+            record = selected_by_id.get(plan_id)
+            if record is None:
+                errors.append(f"{label}: plan ID {plan_id} is not selected in the plan.")
+                continue
+
+            expected = {
+                "role": record.get("role"),
+                "template": record.get("template"),
+                "source": record.get("source"),
+                "origin": record.get("origin"),
+            }
+            for field, value in expected.items():
+                if meme[field] != value:
+                    errors.append(
+                        f"{label}: data-meme-{field.replace('_', '-')} "
+                        f"is {meme[field]!r}; plan expects {value!r}."
+                    )
+
+            slide_id = (
+                parser.slides[meme["slide"]]["id"]
+                if meme["slide"] is not None
+                else None
+            )
+            if slide_id != record.get("slide_id"):
+                errors.append(
+                    f"{label}: meme is on slide {slide_id!r}; "
+                    f"plan expects {record.get('slide_id')!r}."
+                )
+
+        for plan_id in selected_by_id.keys() - html_by_id.keys():
+            errors.append(f"plan: selected placement {plan_id} is missing from HTML.")
+
     return errors, warnings, parser
 
 
@@ -157,6 +226,11 @@ def main() -> int:
         action="store_true",
         help="Return a failure status for warnings as well as errors",
     )
+    arg_parser.add_argument(
+        "--plan",
+        type=Path,
+        help="Audited meme plan JSON to cross-check against the HTML",
+    )
     args = arg_parser.parse_args()
 
     if not 0 < args.max_density <= 1:
@@ -164,7 +238,11 @@ def main() -> int:
     if not args.html.is_file():
         arg_parser.error(f"file not found: {args.html}")
 
-    errors, warnings, parser = audit(args.html.resolve(), args.max_density)
+    errors, warnings, parser = audit(
+        args.html.resolve(),
+        args.max_density,
+        args.plan.resolve() if args.plan else None,
+    )
     print(
         f"Slides: {len(parser.slides)} | Memes: {len(parser.memes)} | "
         f"Errors: {len(errors)} | Warnings: {len(warnings)}"

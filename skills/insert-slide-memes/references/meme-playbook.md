@@ -1,5 +1,21 @@
 # Meme Selection Playbook
 
+## Hard gates
+
+Apply these gates before scoring, sourcing an asset, or adapting a caption. A searched candidate must pass every gate:
+
+1. **Established format:** The candidate is a recognized meme template, reaction image, or phrase format with documented recurring use. Promotional art, wallpapers, press images, stock photos, fandom art, and unrelated illustrations fail.
+2. **Semantic match:** The template's established meaning—not a coincidental word, character, color, or slogan—matches the communicative job.
+3. **Audience fit:** The recognition basis is broad recognition, concrete evidence from the intended audience, or explicit user approval. `Assumed` is not sufficient.
+4. **Two-second recognition:** The intended audience can recognize both the format and the adaptation within two seconds.
+5. **Caption clarity:** The caption completes the familiar format without explaining what the image is or why it was chosen.
+6. **Presenter safety:** A context-free screenshot would not falsely imply the presenter's fandom, hobby, politics, identity, or endorsement.
+7. **Asset match:** The selected image is the recognizable meme artifact or a faithful template instance. A later promotional derivative does not become the meme's original or its template.
+
+Reject the candidate when any gate fails. Do not let a high score compensate for a failed gate. A user-provided exact asset may bypass only the established-format gate; it still must pass safety, clarity, accessibility, source-honesty, and layout checks.
+
+For a callback, record the earlier slide or moment that introduced the same template, phrase, or joke. Without an earlier setup, classify it as another role or drop it.
+
 ## Placement score
 
 Score a candidate from 0–2 on each dimension:
@@ -16,7 +32,9 @@ Score a candidate from 0–2 on each dimension:
 
 Apply an additional `-1` ubiquity penalty when a template repeatedly appears as a generic answer across unrelated presentation topics. Common examples include `Confused Math Lady`, `Drake Hotline Bling`, and `This Is Fine`; treat these as illustrative, not as a permanent blacklist. Keep the penalty even when the template remains the best semantic fit.
 
-Insert only candidates with an adjusted score of at least 12/14 and no unresolved safety concern. Record both the seven-dimension score and any ubiquity penalty.
+Record every dimension separately. Insert only candidates that passed every hard gate, have no zero in narrative value, template semantics, audience recognition, or caption clarity, and have an adjusted score of at least 12/14 with no unresolved safety concern.
+
+Score novelty only after semantic precision and audience recognition pass. Freshness never compensates for obscurity, weak meaning, or identity risk.
 
 ## Cross-language search
 
@@ -27,22 +45,19 @@ Treat language as a search dimension, not a selection rule.
    - the deck language
    - English and globally common meme terminology
    - relevant regional or professional-community vocabulary when the audience is likely to know it
-3. Build a sourced candidate slate with at least:
-   - 2 globally common templates
-   - 2 regional or language-specific templates
-   - 2 workplace, professional, or relevant community templates
-4. Record a concrete template name and source or search evidence for every candidate. Do not count an unnamed category such as “Korean reaction image” as a candidate.
-5. If one ecosystem has no credible candidate for the audience and communicative job, record why and replace it with candidates from another distinct ecosystem. Do not pad the slate with weak or invented entries.
+3. Explore globally common, regional or language-specific, and workplace, professional, or relevant community ecosystems when they plausibly fit the audience. This is coverage, not a quota.
+4. Record a concrete template name and semantic source for every candidate. Do not count an unnamed category such as “Korean reaction image” as a candidate.
+5. If an ecosystem has no credible candidate, record that result and move on. Do not replace it merely to fill a category, and do not treat an empty or fully rejected slate as failure.
 6. Do not add an original, generated, or directly produced meme to the candidate slate unless the user explicitly requests one.
-7. Eliminate candidates that depend on a niche community, untranslated wordplay, or cultural knowledge the audience probably lacks.
-8. Score the survivors with the table above and apply the ubiquity penalty.
+7. Eliminate candidates that depend on a niche community, untranslated wordplay, fandom, or cultural knowledge without audience evidence or explicit user approval.
+8. Apply the hard gates, then score only the survivors and apply the ubiquity penalty.
 9. Break ties by semantic precision, audience recognition, novelty/fatigue, caption brevity, rights clarity, and asset quality—in that order.
 
 Do not prefer a Korean meme for Korean slides or an English meme for English slides merely because the languages match. A globally known template with a localized caption can outperform a same-language reference, and a regional meme can win when the audience clearly recognizes it.
 
 ## Korean meme source hierarchy
 
-Use these levels in order. A page found at one level is evidence for that level only.
+Use these levels in order. Keep semantic history, original provenance, asset location, and reuse permission separate. A page found at one level is evidence for that level only; an official downloadable asset does not prove meme status, semantic fit, originality, or reuse permission.
 
 1. **Discover candidates**
    - Search the communicative job with Korean terms such as `상황 + 짤`, `감정 + 밈`, `직장 + 짤`, and exact remembered phrases.
@@ -54,6 +69,7 @@ Use these levels in order. A page found at one level is evidence for that level 
 3. **Trace the original**
    - Find the earliest credible creator-controlled or publisher-controlled page: the creator's official video or post, broadcaster VOD, original webtoon episode, interview, or publication.
    - Record creator or publisher, work or episode, URL, date when available, and timestamp for video.
+   - Do not label a later campaign, wallpaper, merchandise page, press image, or promotional derivative as the original merely because the publisher is official.
    - If the original cannot be traced, keep the candidate `provisional` and do not count it as a sourced regional candidate.
 4. **Determine asset reuse**
    - Check the original page's license, terms, permission, or downloadable press assets separately from provenance.
@@ -63,14 +79,15 @@ Use these levels in order. A page found at one level is evidence for that level 
 
 ### Korean static-image workflow
 
-Use this order after selecting a Korean candidate:
+Use this order only after a Korean candidate passes the hard gates:
 
 1. Run image search with the exact phrase, candidate name, and Korean terms such as `짤`, `이미지`, `PNG`, or `JPG`.
 2. Open the strongest contextual result and locate the actual static image URL rather than downloading the search thumbnail.
-3. Download the JPG, PNG, WebP, or GIF locally, verify its file type and dimensions, and visually inspect that the expression and baked-in text match the intended meaning.
-4. Record both the contextual page and the direct asset URL. Keep the original creator or publisher attribution separately when known.
-5. For internal training with unclear rights, set `reuse_status: "rights unclear"` and `distribution_limit: "internal only"`.
-6. Do not play or seek through a video to capture a frame. If no suitable static image is available, ask the user to put the desired image in a local folder or choose another candidate.
+3. Confirm that the asset is the recognizable meme artifact or a faithful template instance. Reject wallpapers, promotional art, and unrelated images that merely share a slogan or topic.
+4. Download the JPG, PNG, WebP, or GIF locally, verify its file type and dimensions, and visually inspect that the expression and baked-in text match the intended meaning.
+5. Record the semantic source, original source, contextual page, and direct asset URL in separate fields.
+6. For internal training with unclear rights, set `rights_status: "unclear"` and `distribution: "internal"`.
+7. Do not play or seek through a video to capture a frame. If no suitable static image is available, ask the user to put the desired image in a local folder or choose another candidate.
 
 Prefer a user-provided local image when the user already has the desired Korean meme. Preserve that original, copy it into the deck-local asset folder, and record its rights as unverified unless the user supplies permission information.
 
@@ -78,15 +95,15 @@ Record the result as:
 
 ```yaml
 discovery_source: "<trend index, search result, or community URL>"
-context_sources:
+semantic_sources:
   - "<meaning or spread source>"
 original_source:
   publisher: "<creator or publisher>"
   work: "<post, article, video, episode, or other original work>"
   url: "<original URL>"
 asset_url: "<direct JPG, PNG, WebP, or GIF URL>"
-reuse_status: "<clear license, permission, or rights unclear>"
-distribution_limit: "<none, internal only, or drop for public release>"
+rights_status: "<cleared, unclear, or user-provided-unverified>"
+distribution: "<internal or public>"
 ```
 
 Do not use ZzalBot or a similar aggregation page as a rights authority. Its presence can support discovery only when it leads to a concrete candidate that passes the remaining levels.
@@ -118,7 +135,7 @@ Weak moments:
 
 ## Tone levels
 
-- **Subtle:** Widely recognized reaction template, visual metaphor, or dry caption with restrained treatment. Use for executives, clients, and mixed audiences.
+- **Subtle:** Widely recognized reaction template or dry caption with restrained treatment. Use for executives, clients, and mixed audiences. A generic visual metaphor is not a meme and belongs in the deck's illustration workflow, not this skill.
 - **Conversational:** Recognizable workplace situation with a concise caption. Use for internal talks and workshops.
 - **Internet-native:** Strong format conventions or niche references. Use only when the audience clearly shares that culture.
 
@@ -126,7 +143,7 @@ Default to subtle when context is missing.
 
 ## Asset guidance
 
-Prefer a recognizable template whose established meaning does part of the comedic work. Do not generate an original meme by default; unfamiliar imagery must explain itself and therefore usually lands less reliably.
+Prefer a recognizable template whose established meaning does part of the comedic work. Do not generate an original meme by default. Do not attach an arbitrary image to a recognized phrase; the asset itself must preserve the phrase format or template convention.
 
 Add or localize the caption in HTML when practical rather than baking text into the image. This improves accessibility, editing, localization, and rendering quality. Preserve original template text when it is itself the recognized punchline, such as a short catchphrase the audience is likely to understand.
 
@@ -157,5 +174,7 @@ For every meme, ask:
 4. Would the presenter be comfortable if the slide were screenshotted without context?
 5. Is the source or generation status honest and recorded?
 6. Did a familiar default win because it was truly best after the novelty and ubiquity checks, rather than because it was the first recognizable result?
+7. Does the asset read as the intended meme rather than the presenter's fandom, endorsement, or hobby?
+8. Did the candidate pass every hard gate before asset availability or source convenience influenced the choice?
 
 Remove the meme if any answer is no.

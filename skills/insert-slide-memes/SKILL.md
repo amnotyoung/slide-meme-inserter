@@ -20,23 +20,25 @@ Honor an explicitly requested mode. Otherwise:
 
 ## Shared selection rules
 
-1. Infer audience, setting, language, formality, shared references, and humor tolerance.
+1. Establish audience, setting, language, formality, shared references, humor tolerance, and distribution scope. Treat an unverified shared reference as absent; do not infer fandom, gaming, political, or subculture affinity from profession, nationality, age, or technical fluency.
 2. Read [references/meme-playbook.md](references/meme-playbook.md).
 3. Read [references/user-provided-memes.md](references/user-provided-memes.md) when the user supplies any asset, URL, template name, caption, or placement instruction.
 4. Define the communicative job before searching for an image.
-5. For every unresolved placement, compare sourced candidates from globally common, regional or language-specific, and relevant professional or community meme ecosystems. Follow the minimum candidate slate in the playbook; do not satisfy it with vague categories or invented examples.
-6. Prefer an established, recognizable template. Do not generate an original meme unless the user explicitly asks.
-7. Localize the caption while preserving the template's familiar meaning.
-8. Verify the source and reuse status. For Korean candidates, follow the Korean source hierarchy and static-image workflow in the playbook instead of treating a search result or repost as provenance. Download chosen image assets locally; never hotlink third-party images or capture frames from video.
-9. Default to roughly one meme per 5–7 content slides, cap at three unless requested otherwise, and use at most one meme per slide. Honor an explicit user count while warning if it materially weakens the deck.
-10. Reject a searched candidate that decorates, repeats the slide, needs explanation, targets a person or group, or weakens the presenter's credibility. For a user-supplied asset, flag the concrete concern but do not silently replace it.
+5. For every unresolved placement, explore sourced candidates from globally common, regional or language-specific, and relevant professional or community meme ecosystems. Treat this as search coverage, not a quota; never pad a slate or select a weaker candidate to represent an ecosystem.
+6. Apply every hard gate in the playbook before scoring or downloading an asset. A caption cannot turn promotional art, wallpaper, stock imagery, fandom art, or an unrelated illustration into a meme.
+7. Prefer an established, recognizable template whose familiar meaning performs part of the joke. Do not generate an original meme unless the user explicitly asks.
+8. Record the complete per-dimension score, recognition basis, identity signal, source roles, and gate results in a machine-readable JSON plan. Run `python3 <skill-root>/scripts/audit_meme_plan.py path/to/meme-plan.json --strict` before downloading or inserting any searched asset.
+9. Localize the caption while preserving the template's familiar meaning.
+10. Verify semantic history, original provenance, asset location, and reuse status as separate facts. For Korean candidates, follow the Korean source hierarchy and static-image workflow in the playbook. Download only a candidate that already passed selection; never hotlink third-party images or capture frames from video.
+11. Default to roughly one meme per 5–7 content slides, cap at three unless requested otherwise, and use at most one meme per slide. Zero memes is a valid result. Honor an explicit user count while warning if it materially weakens the deck.
+12. Reject a searched candidate that decorates, repeats the slide, needs explanation, depends on an unverified subculture, implies an unsupported presenter identity, or weakens the presenter's credibility. For a user-supplied asset, flag the concrete concern but do not silently replace it.
 
 ## Mode: `postprocess`
 
 1. Inspect the complete deck, assets, framework, slide boundaries, navigation, stable identifiers, and intended viewport.
 2. Identify high-value release, analogy, callback, and transition moments without changing the deck's argument.
-3. Create a short internal meme plan using the fields in **Meme plan**.
-4. Use user-supplied assets and instructions first. Search, score, source, and download templates only for unresolved placements.
+3. Create the machine-readable meme plan using the fields in **Meme plan**.
+4. Use user-supplied assets and instructions first. Search and hard-gate candidates only for unresolved placements. Audit the plan before downloading selected searched assets.
 5. Insert semantic markup and scoped CSS. Preserve the existing slide system, stable IDs, visual language, and keyboard behavior.
 6. Choose the packaging method:
    - Default to relative local assets beside the deck.
@@ -44,7 +46,7 @@ Honor an explicitly requested mode. Otherwise:
    - Preserve `data-meme-source` metadata in either case.
 7. Render every changed slide and its neighbors at the target viewport and one smaller viewport.
 8. Verify keyboard navigation, image loading, overflow, and browser console output.
-9. Run `python3 <skill-root>/scripts/audit_memes.py path/to/deck.html --strict`.
+9. Run `python3 <skill-root>/scripts/audit_memes.py path/to/deck.html --plan path/to/meme-plan.json --strict`.
 10. Report changed slides, why each joke belongs, asset sources, reuse status, and packaging.
 
 ## Mode: `plan-and-build`
@@ -55,10 +57,10 @@ Read [references/plan-and-build.md](references/plan-and-build.md), then:
 2. Build a content-first outline. Give every slide a narrative job and one primary message.
 3. Mark only the moments that benefit from release, analogy, callback, or transition. Do not place memes at fixed intervals.
 4. Add provisional meme briefs to the outline before choosing exact assets. Keep content slides understandable if every meme is removed.
-5. Apply user-supplied assets and instructions to the relevant outline records. Search and compare recognizable candidates only for unresolved placements after the surrounding argument is clear. Record the winner, localized caption, source, reuse status, layout, and risk.
+5. Apply user-supplied assets and instructions to the relevant outline records. Search and hard-gate recognizable candidates only for unresolved placements after the surrounding argument is clear. Record the complete gate, score, audience, identity, source, layout, and risk fields.
 6. Treat outline approval already required by the presentation workflow as approval of the meme beats too. Add a separate approval gate only for material tone, reputational, or rights risk.
 7. Generate the complete HTML deck with the selected meme moments included. Use stable slide identifiers from the first build.
-8. Apply the same packaging, markup, guardrail, rendering, and audit requirements as `postprocess`.
+8. Audit the machine-readable plan before asset download, then apply the same packaging, markup, guardrail, rendering, and HTML audit requirements as `postprocess`.
 9. Replace or drop any meme that fails the two-second recognition test in the rendered deck.
 10. Report planned versus final meme placements and any candidate changed during visual QA.
 
@@ -66,18 +68,27 @@ Read [references/plan-and-build.md](references/plan-and-build.md), then:
 
 For each proposed placement record:
 
+- unique plan ID and slide identifier
 - slide identifier and narrative job
 - role: `reaction`, `analogy`, `callback`, or `transition`
+- earlier setup slide ID when the role is `callback`
 - intended audience response
 - origin: `user-provided` or `searched`
 - user-locked fields such as asset, template, caption, or placement
+- template name and asset kind
+- recognition basis and concrete audience evidence; never `assumed` for a selected searched candidate
+- identity signal level, domain, and explicit user approval when material
+- every hard-gate result from the playbook
+- all seven score dimensions, total, ubiquity penalty, and adjusted score
 - candidates considered across cultures and why the winner is most recognizable
-- candidate source or search evidence, novelty/fatigue score, and any ubiquity penalty
 - caption or setup, preferably under 12 words
-- source and reuse status
+- separate semantic, original, asset, and HTML attribution sources
+- rights status and distribution scope
 - layout and primary-content tradeoff
 - risk: audience fit, ambiguity, stereotype, copyright, or dated reference
 - status: `provisional`, `selected`, or `dropped`
+
+Use the JSON field names and example in [references/plan-and-build.md](references/plan-and-build.md). A Markdown summary may accompany the JSON, but it does not replace the audited plan.
 
 ## HTML contract
 
@@ -86,7 +97,9 @@ Use this structure when the deck permits it:
 ```html
 <figure
   class="slide-meme"
+  data-meme-plan-id="m01"
   data-meme-role="reaction"
+  data-meme-template="RECOGNIZED_TEMPLATE_NAME"
   data-meme-source="SOURCE_URL_HERE"
   data-meme-origin="searched"
 >
@@ -98,7 +111,7 @@ Use this structure when the deck permits it:
 </figure>
 ```
 
-Use a verified source page or a short marker such as `user-provided` or `project-owned` in `data-meme-source`. Set `data-meme-origin="user-provided"` for user-supplied assets and `searched` for assets selected by the skill. Keep meaningful alternative text distinct from the joke caption. Use `alt=""` only for a truly decorative image.
+Map `data-meme-plan-id`, `data-meme-role`, `data-meme-template`, `data-meme-source`, and `data-meme-origin` from the audited plan. Use the plan's HTML attribution source or a short marker such as `user-provided` or `project-owned` in `data-meme-source`. Keep meaningful alternative text distinct from the joke caption. Use `alt=""` only for a truly decorative image.
 
 Scope styles under the deck or `.slide-meme` namespace:
 
@@ -129,6 +142,8 @@ Adapt values to the deck. Do not introduce global `img`, `figure`, or typography
 - Do not put a meme on the title, agenda, legal/compliance material, sensitive personal stories, layoffs, safety incidents, or solemn conclusions unless explicitly requested and clearly appropriate.
 - Do not target protected traits, appearance, disability, victims, junior staff, customers, or identifiable coworkers.
 - Avoid political, sexual, violent, insulting, or profanity-heavy material by default.
+- Treat gaming, sports-team, entertainment-franchise, political, religious, and other fandom imagery as a material presenter-identity signal. Do not use it for a searched candidate without concrete audience evidence and explicit user approval.
+- Reject promotional art, wallpapers, press images, stock images, and unrelated illustrations as searched memes even when their slogan or subject creates a topical word association.
 - Do not treat popularity or search availability as permission. Record the source and rights status; use a cleared alternative when public distribution requires it.
 - Never invent an image source, license, quotation, or attribution.
 - Do not let a meme shrink body text, cover controls, cause overflow, or become necessary to understand the slide.
@@ -143,6 +158,7 @@ Check:
 - sufficient caption contrast and readable type
 - no remote hotlinks; local or valid embedded assets only
 - meaningful `alt` text and source metadata
+- exact correspondence with a selected record in the audited meme plan
 - restrained density and no more than one meme per slide
 - coherent visual treatment
 - no autoplay, flashing animation, or layout shift

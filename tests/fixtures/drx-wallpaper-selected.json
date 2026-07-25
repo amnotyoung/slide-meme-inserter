@@ -1,0 +1,55 @@
+{
+  "plan_version": 1,
+  "audience": "KOICA overseas-office staff",
+  "placements": [
+    {
+      "id": "m03",
+      "slide_id": "slide-46",
+      "status": "selected",
+      "origin": "searched",
+      "role": "callback",
+      "callback_to": null,
+      "communicative_job": "Make Loop Engineering memorable",
+      "intended_response": "Recognize a Korean phrase adapted to work",
+      "template": "중꺾마",
+      "caption": "중요한 것은 꺾이지 않는 루프.",
+      "asset_kind": "wallpaper",
+      "recognition_basis": "assumed",
+      "recognition_evidence": "The phrase became popular in Korea",
+      "identity_signal": {
+        "level": "material",
+        "domain": "League of Legends and DRX fandom",
+        "user_approved": false
+      },
+      "hard_gates": {
+        "established_format": true,
+        "semantic_match": true,
+        "audience_fit": true,
+        "two_second_recognition": true,
+        "caption_clarity": true,
+        "presenter_safe": true,
+        "asset_matches_template": true
+      },
+      "scores": {
+        "narrative_value": 2,
+        "template_semantics": 2,
+        "audience_recognition": 2,
+        "novelty_fatigue": 2,
+        "caption_clarity": 2,
+        "layout_fit": 2,
+        "safety_rights": 1
+      },
+      "score_total": 13,
+      "ubiquity_penalty": 0,
+      "adjusted_score": 13,
+      "semantic_source": "https://www.ajunews.com/view/20221208132140683",
+      "original_source": "https://www.leagueoflegends.com/ko-kr/news/announcements/drx-wallpapers/",
+      "asset_source": "https://cmsassets.rgpub.io/example/drx-wallpaper.jpg",
+      "source": "https://www.leagueoflegends.com/ko-kr/news/announcements/drx-wallpapers/",
+      "rights_status": "unclear",
+      "distribution": "internal",
+      "layout": "Use the 16:9 wallpaper as a large background",
+      "risk": "Non-gamers may read this as the presenter's gaming preference"
+    }
+  ]
+}

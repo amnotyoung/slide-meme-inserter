@@ -41,23 +41,9 @@ Represent each slide with this minimum structure. It may remain an internal work
     role: reaction
     intended_response: "우리도 겪었다는 공감"
     search_job: "같은 입력인데 결과가 달라 혼란스러운 상황"
+    callback_to: null
     candidates:
-      - {template: "<global candidate 1>", source: "<verified-source-url>", ecosystem: global}
-      - {template: "<global candidate 2>", source: "<verified-source-url>", ecosystem: global}
-      - {template: "<regional candidate 1>", source: "<verified-source-url>", ecosystem: regional}
-      - {template: "<regional candidate 2>", source: "<verified-source-url>", ecosystem: regional}
-      - {template: "<professional candidate 1>", source: "<verified-source-url>", ecosystem: professional}
-      - {template: "<professional candidate 2>", source: "<verified-source-url>", ecosystem: professional}
-    score: "13/14"
-    ubiquity_penalty: 0
-    adjusted_score: "13/14"
-    selected: "<highest-adjusted-score candidate>"
-    selection_reason: "이 청중에게 신선하면서도 의미가 가장 정확하다"
-    caption: "프롬프트는 같았는데 정답이 세 개입니다"
-    source: "<verified-source-url>"
-    reuse_status: "rights unclear; internal-use warning"
-    layout: "content slide 다음의 독립 section bumper"
-    risk: "낮음; 개인이나 부서를 조롱하지 않음"
+      - {template: "<candidate>", semantic_source: "<meaning-source-url>", ecosystem: global}
 ```
 
 Use `meme: null` when a slide has no humor job. Allowed status values:
@@ -67,6 +53,68 @@ Use `meme: null` when a slide has no humor job. Allowed status values:
 - `dropped`: the idea failed recognition, tone, rights, or layout review
 
 When the user supplies a meme asset or instruction, add `origin: user-provided` and a `user_locked` map for asset, placement, caption, and layout. Do not run candidate search for a locked exact asset.
+
+After selecting a candidate, store the executable plan as JSON:
+
+```json
+{
+  "plan_version": 1,
+  "audience": "Intended audience",
+  "placements": [
+    {
+      "id": "m01",
+      "slide_id": "s08",
+      "status": "selected",
+      "origin": "searched",
+      "role": "reaction",
+      "callback_to": null,
+      "communicative_job": "Release tension after inconsistent results",
+      "intended_response": "Shared recognition",
+      "template": "Recognized Template",
+      "caption": "Localized caption",
+      "asset_kind": "meme-template",
+      "recognition_basis": "broad-recognition",
+      "recognition_evidence": "Documented recurring template use",
+      "identity_signal": {
+        "level": "none",
+        "domain": null,
+        "user_approved": false
+      },
+      "hard_gates": {
+        "established_format": true,
+        "semantic_match": true,
+        "audience_fit": true,
+        "two_second_recognition": true,
+        "caption_clarity": true,
+        "presenter_safe": true,
+        "asset_matches_template": true
+      },
+      "scores": {
+        "narrative_value": 2,
+        "template_semantics": 2,
+        "audience_recognition": 2,
+        "novelty_fatigue": 1,
+        "caption_clarity": 2,
+        "layout_fit": 2,
+        "safety_rights": 2
+      },
+      "score_total": 13,
+      "ubiquity_penalty": 0,
+      "adjusted_score": 13,
+      "semantic_source": "https://example.com/meaning",
+      "original_source": "https://example.com/original",
+      "asset_source": "https://example.com/image.jpg",
+      "source": "https://example.com/meaning",
+      "rights_status": "unclear",
+      "distribution": "internal",
+      "layout": "Sidecar",
+      "risk": "Low"
+    }
+  ]
+}
+```
+
+Use these exact field names. A Markdown table may summarize the plan, but only the JSON plan is passed to `audit_meme_plan.py` and `audit_memes.py`.
 
 ## Placement logic
 
@@ -92,20 +140,23 @@ Add a dedicated meme slide when the joke needs breathing room. Use a sidecar or 
 Keep the humor job provisional while planning the outline. Commit to an exact template only when:
 
 1. the surrounding content is stable enough to define the intended reaction;
-2. the audience is likely to recognize it within two seconds;
-3. its established meaning matches the message;
-4. the caption works without explaining the template;
-5. the asset source and reuse status are recorded; and
-6. the candidate slate contains concrete, sourced options from the required ecosystems;
-7. novelty/fatigue and any ubiquity penalty have been recorded; and
-8. the layout can survive the target and smaller viewport.
+2. every hard gate passes;
+3. the audience recognition basis is recorded and is not an unsupported assumption;
+4. all seven score dimensions are recorded and satisfy the threshold;
+5. semantic, original, asset, attribution, and rights fields remain distinct;
+6. any material presenter-identity signal has explicit user approval;
+7. a callback points to an earlier setup;
+8. the layout can survive the target and smaller viewport; and
+9. `audit_meme_plan.py --strict` passes.
 
 Drop the meme instead of forcing a weak candidate.
 
 ## Plan-to-HTML mapping
 
 - Preserve the outline `id` as the stable slide identifier.
+- Map the placement `id` to `data-meme-plan-id`.
 - Map `role` to `data-meme-role`.
+- Map `template` to `data-meme-template`.
 - Map `source` to `data-meme-source`.
 - Map `origin` to `data-meme-origin`.
 - Put localized punchline text in HTML, not only inside the raster image.

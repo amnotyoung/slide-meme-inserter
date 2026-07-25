@@ -29,6 +29,8 @@ Do not silently replace a locked asset with a searched or generated alternative.
 
 User choice does not override safety, accessibility, source honesty, or layout integrity.
 
+A user-provided exact asset may bypass the searched-candidate established-format gate. It does not bypass the presenter-identity, audience clarity, semantic fit, rights, or screenshot tests. Treat explicit provision of an exact fandom or gaming asset as approval of that identity signal for the requested placement only; do not generalize that approval to other slides or future decks.
+
 ## Asset handling
 
 ### Local or attached image
@@ -65,13 +67,37 @@ Treat the named template as locked but search for a suitable source and asset. A
 Add these fields to the meme plan:
 
 ```yaml
+id: m-user-01
+slide_id: s12
+status: selected
 origin: user-provided
+role: reaction
+communicative_job: "Use the supplied reaction at the requested beat"
+intended_response: "The user's intended reaction"
+template: "User-provided exact asset"
+caption: "User-supplied or approved caption"
 asset: "/path/or/source-url"
 user_locked:
   asset: true
   placement: true
   caption: false
-reuse_status: "user-provided; rights unverified"
+hard_gates:
+  established_format: false
+  semantic_match: true
+  audience_fit: true
+  two_second_recognition: true
+  caption_clarity: true
+  presenter_safe: true
+  asset_matches_template: true
+identity_signal:
+  level: "<none, low, or material>"
+  domain: "<fandom or identity domain, or null>"
+  user_approved: true
+source: "user-provided"
+rights_status: "user-provided-unverified"
+distribution: "internal"
+layout: "Requested or inferred layout"
+risk: "Concrete audience, identity, rights, or layout risk"
 ```
 
 Use `status: selected` when the asset and placement are ready. Use `provisional` when required information or permission remains unresolved.

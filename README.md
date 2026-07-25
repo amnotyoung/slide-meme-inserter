@@ -123,14 +123,15 @@ Use $insert-slide-memes to add memes to slides.html.
 
 ### 한국 밈은 정적 이미지로 가져옵니다
 
-한국 밈은 영상에서 장면을 찾고 캡처하지 않습니다. 광고, 재생 상태와 타임스탬프 탐색 때문에 느리고 불안정하기 때문입니다. 대신 다음 순서로 처리합니다.
+한국 밈은 먼저 밈 형식·의미·청중 인지도·발표자 정체성 위험을 심사합니다. 이 게이트를 모두 통과한 후보만 정적 이미지를 찾습니다. 영상에서 장면을 찾고 캡처하지 않습니다.
 
 1. 정확한 대사나 후보명에 `짤`, `이미지`, `PNG`, `JPG`를 붙여 이미지 검색합니다.
 2. 검색 썸네일이 아니라 해당 페이지에 포함된 실제 정적 이미지 URL을 찾습니다.
-3. JPG·PNG·WebP·GIF 파일을 로컬로 내려받아 크기와 내용을 확인합니다.
-4. 발견 페이지, 직접 이미지 URL과 가능한 원출처를 함께 기록합니다.
-5. 내부 교육용이고 권리가 불명확하면 `rights unclear`, `internal only`로 표시합니다.
-6. 적절한 정적 이미지를 확보하지 못하면 영상 캡처로 전환하지 않고 사용자에게 이미지 파일을 요청합니다.
+3. 이미지가 실제 밈 템플릿인지 확인합니다. 문구만 연상되는 월페이퍼·홍보 이미지·팬덤 이미지는 탈락시킵니다.
+4. JPG·PNG·WebP·GIF 파일을 로컬로 내려받아 크기와 내용을 확인합니다.
+5. 의미 출처, 원출처, 이미지 URL, HTML 표시 출처와 권리 상태를 분리해 기록합니다.
+6. 내부 교육용이고 권리가 불명확하면 `rights_status: unclear`, `distribution: internal`로 표시합니다.
+7. 적절한 정적 이미지를 확보하지 못하면 영상 캡처로 전환하지 않고 사용자에게 이미지 파일을 요청합니다.
 
 사용자가 이미 원하는 짤을 알고 있다면 직접 받은 이미지 파일을 `meme-input/` 폴더에 넣는 방식이 여전히 가장 빠르고 정확합니다. 스킬이 한국 밈 후보는 찾았지만 사용 가능한 이미지 파일을 확보하지 못한 경우에는, 후보명과 원출처를 제시하고 사용자에게 해당 이미지를 폴더에 넣어 달라고 요청할 수 있습니다.
 
@@ -138,9 +139,12 @@ Use $insert-slide-memes to add memes to slides.html.
 
 - 오리지널 밈보다 청중이 바로 알아보는 기존 밈을 우선합니다.
 - 언어권을 제한하지 않고 문맥 적합성과 인지도를 기준으로 선택합니다.
+- 월페이퍼·홍보 이미지·팬덤 이미지는 문구가 맞더라도 검색 밈으로 사용하지 않습니다.
+- 게임·스포츠·정치 등 발표자의 취향이나 정체성을 암시하는 후보는 청중 근거와 사용자 승인이 없으면 탈락시킵니다.
+- 점수 합계 전에 필수 게이트를 적용하며, 적합한 후보가 없으면 밈을 넣지 않습니다.
 - 밈은 논리를 대신하지 않고 반응, 비유, 콜백, 전환을 돕습니다.
 - 이미지 출처와 재사용 상태를 기록하고, 공개 배포 시 권리를 별도로 확인합니다.
-- 삽입 후 구조 감사와 실제 브라우저 렌더링을 모두 검증합니다.
+- 삽입 전 계획 감사, 삽입 후 HTML 대조와 실제 브라우저 렌더링을 모두 검증합니다.
 
 ## 구조
 
@@ -152,7 +156,9 @@ skills/insert-slide-memes/
 │   ├── meme-playbook.md
 │   ├── plan-and-build.md
 │   └── user-provided-memes.md
-└── scripts/audit_memes.py
+└── scripts/
+    ├── audit_meme_plan.py
+    └── audit_memes.py
 ```
 
 생성된 덱과 내려받은 이미지, QA 캡처는 `output/`에 두며 Git에는 포함하지 않습니다.
@@ -167,7 +173,9 @@ skills/insert-slide-memes/
 ## 감사
 
 ```bash
-python3 skills/insert-slide-memes/scripts/audit_memes.py path/to/deck.html --strict
+python3 skills/insert-slide-memes/scripts/audit_meme_plan.py path/to/meme-plan.json --strict
+python3 skills/insert-slide-memes/scripts/audit_memes.py \
+  path/to/deck.html --plan path/to/meme-plan.json --strict
 ```
 
 ## 라이선스
