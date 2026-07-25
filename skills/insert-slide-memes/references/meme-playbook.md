@@ -40,6 +40,43 @@ Treat language as a search dimension, not a selection rule.
 
 Do not prefer a Korean meme for Korean slides or an English meme for English slides merely because the languages match. A globally known template with a localized caption can outperform a same-language reference, and a regional meme can win when the audience clearly recognizes it.
 
+## Korean meme source hierarchy
+
+Use these levels in order. A page found at one level is evidence for that level only.
+
+1. **Discover candidates**
+   - Search the communicative job with Korean terms such as `상황 + 짤`, `감정 + 밈`, `직장 + 짤`, and exact remembered phrases.
+   - Use current trend indexes such as Careet and search results from Korean communities only to discover concrete candidate names and phrases.
+   - Do not treat an image-search thumbnail, anonymous repost, community hotlink, or generic “짤 모음” page as provenance or permission.
+2. **Verify meaning and spread**
+   - Confirm the candidate's established meaning, audience, and usage with at least one contextual source such as a trend publication, reputable news report, or maintained wiki.
+   - Prefer two independent contextual sources when the phrase is recent, disputed, or community-specific.
+3. **Trace the original**
+   - Find the earliest credible creator-controlled or publisher-controlled page: the creator's official video or post, broadcaster VOD, original webtoon episode, interview, or publication.
+   - Record creator or publisher, work or episode, URL, date when available, and timestamp for video.
+   - If the original cannot be traced, keep the candidate `provisional` and do not count it as a sourced regional candidate.
+4. **Determine asset reuse**
+   - Check the original page's license, terms, permission, or downloadable press assets separately from provenance.
+   - Treat TV, film, webtoon, creator-video, and celebrity stills as `rights unclear` unless reuse permission is explicit. Finding the original does not grant permission.
+   - For internal use with unresolved rights, record the warning and distribution limit. For public distribution, use only a cleared asset or drop the candidate.
+
+Record the result as:
+
+```yaml
+discovery_source: "<trend index, search result, or community URL>"
+context_sources:
+  - "<meaning or spread source>"
+original_source:
+  publisher: "<creator or publisher>"
+  work: "<video, episode, post, or article>"
+  url: "<original URL>"
+  timestamp: "<HH:MM:SS when applicable>"
+reuse_status: "<clear license, permission, or rights unclear>"
+distribution_limit: "<none, internal only, or drop for public release>"
+```
+
+Do not use ZzalBot or a similar aggregation page as a rights authority. Its presence can support discovery only when it leads to a concrete candidate that passes the remaining levels.
+
 ## Useful roles
 
 - **Reaction:** Release tension after a dense, painful, or surprising fact.

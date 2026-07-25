@@ -27,7 +27,7 @@ Honor an explicitly requested mode. Otherwise:
 5. For every unresolved placement, compare sourced candidates from globally common, regional or language-specific, and relevant professional or community meme ecosystems. Follow the minimum candidate slate in the playbook; do not satisfy it with vague categories or invented examples.
 6. Prefer an established, recognizable template. Do not generate an original meme unless the user explicitly asks.
 7. Localize the caption while preserving the template's familiar meaning.
-8. Verify the source and reuse status. Download chosen assets; never hotlink third-party images.
+8. Verify the source and reuse status. For Korean candidates, follow the Korean source hierarchy in the playbook instead of treating a search result or repost as provenance. Download chosen assets; never hotlink third-party images.
 9. Default to roughly one meme per 5–7 content slides, cap at three unless requested otherwise, and use at most one meme per slide. Honor an explicit user count while warning if it materially weakens the deck.
 10. Reject a searched candidate that decorates, repeats the slide, needs explanation, targets a person or group, or weakens the presenter's credibility. For a user-supplied asset, flag the concrete concern but do not silently replace it.
 
