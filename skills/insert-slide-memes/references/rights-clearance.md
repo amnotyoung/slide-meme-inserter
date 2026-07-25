@@ -4,6 +4,7 @@ Use this contract before downloading, copying, embedding, or inserting any meme 
 
 ## Contents
 
+- Rights modes
 - Selection rule
 - Intended use modes
 - Clearance evidence
@@ -12,9 +13,50 @@ Use this contract before downloading, copying, embedding, or inserting any meme 
 - Attribution
 - Example
 
+## Rights modes
+
+Choose one plan-level `rights_mode`.
+
+### `strict`
+
+Use strict mode whenever the deck may be shared as a file, presented to clients,
+used at a paid event, exported, recorded, or published. It is also the default when
+the delivery context is unknown. A selected placement must use one of the legal
+bases below.
+
+### `practical`
+
+Practical mode is a limited operational risk screen for a one-off internal live
+presentation. Every selected placement must use only `live-internal` with
+`distribution: internal`. File sharing, client or paid audiences, PDF or image
+export, recording, and online publication are forbidden.
+
+A previously unclear or user-provided asset may become
+`rights_status: "practical-reviewed"` only after recording:
+
+- `transformative_context`: how the slide comments on, reacts to, or repurposes the
+  image in the presentation's own message
+- `necessity`: why this image and this single use serve that communicative job
+- `amount_resolution`: the limited amount, low resolution, and treatment used
+- `market_substitution`: why the slide does not replace demand for the source work
+- `moral_personality_risk`: alteration, dignity, endorsement, portrait/publicity,
+  and sensitive-person risks
+- `attribution_method`: exactly `on-slide`, `credits-slide`, or `speaker-notes`,
+  matching `attribution_location`
+- `checked_at`: review date
+- `no_recording_or_distribution: true`
+
+For a scored searched candidate, set `scores.safety_rights` to `1`;
+`practical-reviewed` is bounded risk, not documented clearance.
+
+This mode does not supply a statutory exception, certify legality, or predict a
+court result. If any practical constraint changes, switch the plan to strict and
+clear every selected asset again.
+
 ## Selection rule
 
-A placement may be `selected` only when it has one documented legal basis:
+In strict mode, a placement may be `selected` only when it has one documented
+legal basis:
 
 - `license`
 - `permission`
@@ -25,7 +67,7 @@ A placement may be `selected` only when it has one documented legal basis:
 
 Use the statutory-exception labels only for a Korean-law analysis. Record another jurisdiction in `jurisdiction` and use a licensed or permitted asset when the applicable exception has not been reviewed.
 
-Use `rights_status: "cleared"` for a license, permission, or public-domain basis. Use `rights_status: "exception-reviewed"` for a reviewed statutory exception. Keep `unclear` and `user-provided-unverified` placements `provisional` or `dropped`; they may not be copied into the deck for internal use.
+Use `rights_status: "cleared"` for a license, permission, or public-domain basis. Use `rights_status: "exception-reviewed"` for a reviewed statutory exception. In practical mode only, use `rights_status: "practical-reviewed"` after completing the compact review above. Keep `unclear` and `user-provided-unverified` placements `provisional` or `dropped`.
 
 The audit verifies that evidence and analysis fields exist. It does not certify that a license is authentic or that a court would accept a statutory exception.
 
@@ -36,6 +78,7 @@ Record every planned use:
 - `live-internal`
 - `internal-file-share`
 - `live-client`
+- `external-file-share`
 - `paid-event`
 - `public-pdf`
 - `public-recording`
@@ -44,7 +87,7 @@ Record every planned use:
 Set `distribution` to:
 
 - `internal` for internal-only modes
-- `external-limited` when `live-client` or `paid-event` is the broadest mode
+- `external-limited` when `live-client`, `external-file-share`, or `paid-event` is the broadest mode
 - `public` when a public PDF, recording, or online publication is planned
 
 Adding a use mode later requires a new scope check. A live-only permission does not authorize PDF distribution or recording.
@@ -111,17 +154,33 @@ Keep discovery, semantic history, original provenance, asset location, legal evi
 
 Record:
 
-- `attribution_text`: visible creator, work, source, and license text appropriate to the use
+- `attribution_text`: creator, work, source, and license text appropriate to the use
 - `attribution_url`: the creator-controlled, publisher-controlled, or license-required source
 - `source`: the same value as `attribution_url` for HTML mapping
 
-Render `attribution_text` as a visible link with class `meme-attribution` inside the meme figure. A hidden `data-meme-source` attribute, `user-provided`, `source: internet`, or an aggregator link is not sufficient attribution.
+Record `attribution_location`:
 
-## Example
+- `on-slide` or `credits-slide` in strict mode
+- `on-slide`, `credits-slide`, or `speaker-notes` in practical mode
+
+Render `attribution_text` as a link with class `meme-attribution`. An on-slide link
+belongs inside the meme figure. A credits or speaker-notes link belongs outside the
+figure and must carry both `data-meme-plan-id` and
+`data-meme-attribution-location`. A hidden `data-meme-source` attribute,
+`user-provided`, `source: internet`, or an aggregator link is not sufficient.
+
+Put a credits link in a slide classed as `credits`, `credits-slide`, `references`,
+or `sources`. Put a speaker-notes link in an element with class `speaker-notes` or
+the `data-speaker-notes` attribute. The HTML audit checks these containers.
+
+## Examples
+
+### Strict placement
 
 ```json
 {
   "rights_status": "cleared",
+  "attribution_location": "on-slide",
   "distribution": "external-limited",
   "use_modes": ["live-client"],
   "legal_basis": {
@@ -155,5 +214,28 @@ Render `attribution_text` as a visible link with class `meme-attribution` inside
   "attribution_text": "Example Creator — Licensed Template, CC BY 4.0",
   "attribution_url": "https://example.com/license",
   "source": "https://example.com/license"
+}
+```
+
+### Practical placement
+
+This record is valid only in a plan with `"rights_mode": "practical"`:
+
+```json
+{
+  "rights_status": "practical-reviewed",
+  "attribution_location": "speaker-notes",
+  "distribution": "internal",
+  "use_modes": ["live-internal"],
+  "practical_review": {
+    "transformative_context": "The reaction image comments on the team's own workflow failure.",
+    "necessity": "One image supports this specific discussion beat.",
+    "amount_resolution": "A low-resolution copy appears once without cropping.",
+    "market_substitution": "The slide does not replace demand for the source work.",
+    "moral_personality_risk": "No degrading alteration, endorsement implication, or sensitive person.",
+    "attribution_method": "speaker-notes",
+    "checked_at": "2026-07-25",
+    "no_recording_or_distribution": true
+  }
 }
 ```

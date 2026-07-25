@@ -19,6 +19,7 @@ def valid_plan() -> dict:
     return {
         "plan_version": 1,
         "audience": "Mixed internal training audience",
+        "rights_mode": "strict",
         "placements": [
             {
                 "id": "m01",
@@ -65,6 +66,7 @@ def valid_plan() -> dict:
                 "asset_source": "https://example.com/licensed-template.jpg",
                 "attribution_text": "Example Creator — Licensed Template, CC BY 4.0",
                 "attribution_url": "https://example.com/license",
+                "attribution_location": "on-slide",
                 "source": "https://example.com/license",
                 "rights_status": "cleared",
                 "distribution": "internal",
@@ -116,6 +118,7 @@ class MemePlanAuditTests(unittest.TestCase):
             {
                 "plan_version": 1,
                 "audience": "Executive briefing",
+                "rights_mode": "strict",
                 "placements": [],
             }
         )
@@ -180,6 +183,45 @@ class MemePlanAuditTests(unittest.TestCase):
             any("unresolved rights cannot be selected" in error for error in errors)
         )
 
+    def test_practical_mode_allows_reviewed_user_provided_asset(self) -> None:
+        plan = valid_plan()
+        plan["rights_mode"] = "practical"
+        placement = plan["placements"][0]
+        placement["origin"] = "user-provided"
+        placement["template"] = "User-provided exact asset"
+        placement["rights_status"] = "practical-reviewed"
+        placement["attribution_location"] = "speaker-notes"
+        placement["user_locked"] = {"asset": True}
+        placement.pop("legal_basis")
+        for field in (
+            "asset_kind",
+            "recognition_basis",
+            "recognition_evidence",
+            "semantic_source",
+            "original_source",
+            "asset_source",
+            "scores",
+            "score_total",
+            "ubiquity_penalty",
+            "adjusted_score",
+        ):
+            placement.pop(field, None)
+        placement["practical_review"] = {
+            "transformative_context": "Contextual reaction to the team's workflow.",
+            "necessity": "One supplied image at one discussion beat.",
+            "amount_resolution": "Low resolution and no raster edits.",
+            "market_substitution": "No substitute for the source work.",
+            "moral_personality_risk": "No degrading or endorsement context.",
+            "attribution_method": "speaker-notes",
+            "checked_at": "2026-07-25",
+            "no_recording_or_distribution": True,
+        }
+
+        errors, warnings, selected = audit_plan_data(plan)
+        self.assertEqual(errors, [])
+        self.assertEqual(warnings, [])
+        self.assertEqual([record["id"] for record in selected], ["m01"])
+
     def test_internal_searched_asset_with_unclear_rights_is_rejected(self) -> None:
         plan = valid_plan()
         placement = plan["placements"][0]
@@ -189,6 +231,118 @@ class MemePlanAuditTests(unittest.TestCase):
         joined = "\n".join(errors)
         self.assertIn("unresolved rights cannot be selected", joined)
         self.assertIn("requires a legal_basis object", joined)
+
+    def test_practical_mode_allows_reviewed_live_internal_use(self) -> None:
+        plan = valid_plan()
+        plan["rights_mode"] = "practical"
+        placement = plan["placements"][0]
+        placement["rights_status"] = "practical-reviewed"
+        placement["attribution_location"] = "speaker-notes"
+        placement.pop("legal_basis")
+        placement["scores"]["safety_rights"] = 1
+        placement["score_total"] = 12
+        placement["adjusted_score"] = 12
+        placement["practical_review"] = {
+            "transformative_context": (
+                "The image comments on the team's own workflow failure."
+            ),
+            "necessity": "One reaction image supports the specific discussion beat.",
+            "amount_resolution": "A low-resolution copy is shown once without cropping.",
+            "market_substitution": "The slide is not a substitute for the source work.",
+            "moral_personality_risk": (
+                "No degrading alteration, endorsement implication, or sensitive person."
+            ),
+            "attribution_method": "speaker-notes",
+            "checked_at": "2026-07-25",
+            "no_recording_or_distribution": True,
+        }
+
+        errors, warnings, selected = audit_plan_data(plan)
+        self.assertEqual(errors, [])
+        self.assertEqual(warnings, [])
+        self.assertEqual([record["id"] for record in selected], ["m01"])
+
+    def test_practical_mode_rejects_file_sharing(self) -> None:
+        plan = valid_plan()
+        plan["rights_mode"] = "practical"
+        placement = plan["placements"][0]
+        placement["rights_status"] = "practical-reviewed"
+        placement["use_modes"] = ["internal-file-share"]
+        placement.pop("legal_basis")
+        placement["scores"]["safety_rights"] = 1
+        placement["score_total"] = 12
+        placement["adjusted_score"] = 12
+        placement["practical_review"] = {
+            "transformative_context": "Contextual reaction.",
+            "necessity": "One image.",
+            "amount_resolution": "Low resolution.",
+            "market_substitution": "No substitute.",
+            "moral_personality_risk": "Reviewed.",
+            "attribution_method": "on-slide",
+            "checked_at": "2026-07-25",
+            "no_recording_or_distribution": True,
+        }
+
+        errors, _, _ = audit_plan_data(plan)
+        self.assertTrue(any("file sharing" in error for error in errors))
+
+    def test_practical_mode_rejects_broader_use_even_when_licensed(self) -> None:
+        plan = valid_plan()
+        plan["rights_mode"] = "practical"
+        placement = plan["placements"][0]
+        placement["distribution"] = "external-limited"
+        placement["use_modes"] = ["live-client"]
+        placement["legal_basis"]["scope"]["use_modes"] = ["live-client"]
+
+        errors, _, _ = audit_plan_data(plan)
+        self.assertTrue(any("require strict mode" in error for error in errors))
+
+    def test_strict_external_file_share_is_external_limited(self) -> None:
+        plan = valid_plan()
+        placement = plan["placements"][0]
+        placement["distribution"] = "external-limited"
+        placement["use_modes"] = ["external-file-share"]
+        placement["legal_basis"]["scope"]["use_modes"] = ["external-file-share"]
+
+        errors, warnings, selected = audit_plan_data(plan)
+        self.assertEqual(errors, [])
+        self.assertEqual(warnings, [])
+        self.assertEqual([record["id"] for record in selected], ["m01"])
+
+    def test_practical_review_requires_no_distribution_confirmation(self) -> None:
+        plan = valid_plan()
+        plan["rights_mode"] = "practical"
+        placement = plan["placements"][0]
+        placement["rights_status"] = "practical-reviewed"
+        placement.pop("legal_basis")
+        placement["scores"]["safety_rights"] = 1
+        placement["score_total"] = 12
+        placement["adjusted_score"] = 12
+        placement["practical_review"] = {
+            "transformative_context": "Contextual reaction.",
+            "necessity": "One image.",
+            "amount_resolution": "Low resolution.",
+            "market_substitution": "No substitute.",
+            "moral_personality_risk": "Reviewed.",
+            "attribution_method": "on-slide",
+            "checked_at": "2026-07-25",
+            "no_recording_or_distribution": False,
+        }
+
+        errors, _, _ = audit_plan_data(plan)
+        self.assertTrue(
+            any("no_recording_or_distribution must be true" in error for error in errors)
+        )
+
+    def test_strict_mode_rejects_practical_review_status(self) -> None:
+        plan = valid_plan()
+        placement = plan["placements"][0]
+        placement["rights_status"] = "practical-reviewed"
+        placement.pop("legal_basis")
+        errors, _, _ = audit_plan_data(plan)
+        self.assertTrue(
+            any("allowed only in practical mode" in error for error in errors)
+        )
 
     def test_new_public_use_requires_matching_license_scope(self) -> None:
         plan = valid_plan()
@@ -307,7 +461,7 @@ class HtmlPlanCrossCheckTests(unittest.TestCase):
 
             errors, _, _ = audit(html_path, 0.20, plan_path)
             self.assertTrue(
-                any("missing visible .meme-attribution" in error for error in errors)
+                any("missing .meme-attribution" in error for error in errors)
             )
 
     def test_visible_attribution_must_match_plan(self) -> None:
@@ -342,8 +496,122 @@ class HtmlPlanCrossCheckTests(unittest.TestCase):
 
             errors, _, _ = audit(html_path, 0.20, plan_path)
             self.assertTrue(
-                any("visible attribution text" in error for error in errors)
+                any("attribution text" in error for error in errors)
             )
+
+    def test_practical_speaker_notes_attribution_matches_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            plan = valid_plan()
+            plan["rights_mode"] = "practical"
+            placement = plan["placements"][0]
+            placement["rights_status"] = "practical-reviewed"
+            placement["attribution_location"] = "speaker-notes"
+            placement.pop("legal_basis")
+            placement["scores"]["safety_rights"] = 1
+            placement["score_total"] = 12
+            placement["adjusted_score"] = 12
+            placement["practical_review"] = {
+                "transformative_context": "Contextual reaction.",
+                "necessity": "One image.",
+                "amount_resolution": "Low resolution.",
+                "market_substitution": "No substitute.",
+                "moral_personality_risk": "Reviewed.",
+                "attribution_method": "speaker-notes",
+                "checked_at": "2026-07-25",
+                "no_recording_or_distribution": True,
+            }
+            plan_path = tmp_path / "meme-plan.json"
+            html_path = tmp_path / "deck.html"
+            image_path = tmp_path / "meme.jpg"
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+            image_path.write_bytes(b"test-image")
+            html_path.write_text(
+                """
+                <section id="s08">
+                  <figure
+                    class="slide-meme"
+                    data-meme-plan-id="m01"
+                    data-meme-role="reaction"
+                    data-meme-template="Licensed Reaction Template"
+                    data-meme-source="https://example.com/license"
+                    data-meme-origin="searched"
+                  >
+                    <img src="meme.jpg" alt="A confused person looks around" />
+                    <figcaption>분명 저장했습니다. 어디에 저장했는지만 빼고.</figcaption>
+                  </figure>
+                  <aside class="speaker-notes">
+                    <a
+                      class="meme-attribution"
+                      data-meme-plan-id="m01"
+                      data-meme-attribution-location="speaker-notes"
+                      href="https://example.com/license"
+                    >Example Creator — Licensed Template, CC BY 4.0</a>
+                  </aside>
+                </section>
+                """,
+                encoding="utf-8",
+            )
+
+            errors, warnings, _ = audit(html_path, 0.20, plan_path)
+            self.assertEqual(errors, [])
+            self.assertEqual(warnings, [])
+
+            html_path.write_text(
+                html_path.read_text(encoding="utf-8").replace(
+                    'class="speaker-notes"',
+                    'class="footnote"',
+                ),
+                encoding="utf-8",
+            )
+            errors, _, _ = audit(html_path, 0.20, plan_path)
+            self.assertTrue(
+                any(
+                    "must be inside an element with class speaker-notes" in error
+                    for error in errors
+                )
+            )
+
+    def test_strict_credits_slide_attribution_matches_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            plan = valid_plan()
+            plan["placements"][0]["attribution_location"] = "credits-slide"
+            plan_path = tmp_path / "meme-plan.json"
+            html_path = tmp_path / "deck.html"
+            image_path = tmp_path / "meme.jpg"
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+            image_path.write_bytes(b"test-image")
+            html_path.write_text(
+                """
+                <section id="s08">
+                  <figure
+                    class="slide-meme"
+                    data-meme-plan-id="m01"
+                    data-meme-role="reaction"
+                    data-meme-template="Licensed Reaction Template"
+                    data-meme-source="https://example.com/license"
+                    data-meme-origin="searched"
+                  >
+                    <img src="meme.jpg" alt="A confused person looks around" />
+                    <figcaption>분명 저장했습니다. 어디에 저장했는지만 빼고.</figcaption>
+                  </figure>
+                </section>
+                <section id="credits" class="credits">
+                  <a
+                    class="meme-attribution"
+                    data-meme-plan-id="m01"
+                    data-meme-attribution-location="credits-slide"
+                    href="https://example.com/license"
+                  >Example Creator — Licensed Template, CC BY 4.0</a>
+                </section>
+                """,
+                encoding="utf-8",
+            )
+
+            errors, warnings, _ = audit(html_path, 0.20, plan_path)
+            self.assertEqual(errors, [])
+            self.assertEqual(warnings, [])
 
     def test_html_plan_mismatch_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

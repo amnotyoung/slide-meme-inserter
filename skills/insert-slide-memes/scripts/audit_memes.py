@@ -25,12 +25,16 @@ class DeckParser(HTMLParser):
         self.slide_tag_stack: list[bool] = []
         self.figure_stack: list[dict | None] = []
         self.memes: list[dict] = []
+        self.attributions: list[dict] = []
         self.attribution_depth = 0
-        self.attribution_meme: dict | None = None
+        self.active_attribution: dict | None = None
+        self.speaker_notes_stack: list[str] = []
 
     def handle_starttag(self, tag: str, attrs_list: list[tuple[str, str | None]]) -> None:
         attrs = dict(attrs_list)
         classes = set((attrs.get("class") or "").split())
+        if "speaker-notes" in classes or "data-speaker-notes" in attrs:
+            self.speaker_notes_stack.append(tag)
 
         if tag in SLIDE_TAGS:
             is_slide = tag == "section" or "slide" in classes or "data-slide" in attrs
@@ -55,9 +59,6 @@ class DeckParser(HTMLParser):
                     "origin": attrs.get("data-meme-origin"),
                     "images": [],
                     "has_caption": False,
-                    "has_attribution": False,
-                    "attribution_href": None,
-                    "attribution_text": [],
                 }
                 self.memes.append(meme)
                 if self.slide_stack:
@@ -74,33 +75,54 @@ class DeckParser(HTMLParser):
         if tag == "figcaption" and self.figure_stack and self.figure_stack[-1] is not None:
             self.figure_stack[-1]["has_caption"] = True
 
-        if (
-            self.figure_stack
-            and self.figure_stack[-1] is not None
-            and "meme-attribution" in classes
-        ):
-            meme = self.figure_stack[-1]
-            meme["has_attribution"] = True
-            meme["attribution_href"] = attrs.get("href")
+        if "meme-attribution" in classes:
+            containing_meme = (
+                self.figure_stack[-1]
+                if self.figure_stack and self.figure_stack[-1] is not None
+                else None
+            )
+            attribution = {
+                "tag": tag,
+                "plan_id": attrs.get("data-meme-plan-id")
+                or (containing_meme["plan_id"] if containing_meme else None),
+                "location": attrs.get("data-meme-attribution-location")
+                or ("on-slide" if containing_meme else None),
+                "inside_figure": containing_meme is not None,
+                "inside_speaker_notes": bool(self.speaker_notes_stack),
+                "inside_credits_slide": bool(
+                    self.slide_stack
+                    and self.slides[self.slide_stack[-1]]["classes"]
+                    & {"credits", "credits-slide", "references", "sources"}
+                ),
+                "containing_meme": containing_meme,
+                "containing_plan_id": (
+                    containing_meme["plan_id"] if containing_meme else None
+                ),
+                "href": attrs.get("href"),
+                "text": [],
+            }
+            self.attributions.append(attribution)
             self.attribution_depth = 1
-            self.attribution_meme = meme
+            self.active_attribution = attribution
         elif self.attribution_depth:
             self.attribution_depth += 1
 
     def handle_data(self, data: str) -> None:
-        if self.attribution_depth and self.attribution_meme is not None and data.strip():
-            self.attribution_meme["attribution_text"].append(data.strip())
+        if self.attribution_depth and self.active_attribution is not None and data.strip():
+            self.active_attribution["text"].append(data.strip())
 
     def handle_endtag(self, tag: str) -> None:
         if self.attribution_depth:
             self.attribution_depth -= 1
             if self.attribution_depth == 0:
-                self.attribution_meme = None
+                self.active_attribution = None
         if tag == "figure" and self.figure_stack:
             self.figure_stack.pop()
         if tag in SLIDE_TAGS and self.slide_tag_stack:
             if self.slide_tag_stack.pop() and self.slide_stack:
                 self.slide_stack.pop()
+        if self.speaker_notes_stack and self.speaker_notes_stack[-1] == tag:
+            self.speaker_notes_stack.pop()
 
 
 def is_remote(src: str) -> bool:
@@ -152,15 +174,18 @@ def audit(
             errors.append(f"{label}: expected exactly one image.")
         if not meme["has_caption"]:
             warnings.append(f"{label}: missing figcaption.")
-        if not meme["has_attribution"]:
-            errors.append(
-                f"{label}: missing visible .meme-attribution element; "
-                "data-meme-source metadata alone is insufficient."
-            )
-        elif not meme["attribution_href"]:
-            errors.append(f"{label}: .meme-attribution must be a link with an href.")
-        if not meme["attribution_text"]:
-            errors.append(f"{label}: .meme-attribution must contain visible text.")
+        if plan_path is None:
+            matching_attributions = [
+                attribution
+                for attribution in parser.attributions
+                if attribution["inside_figure"]
+                and attribution["containing_meme"] is meme
+            ]
+            if not matching_attributions:
+                errors.append(
+                    f"{label}: missing .meme-attribution element inside the meme figure; "
+                    "use --plan to validate a credits-slide or speaker-notes attribution."
+                )
 
         for image in meme["images"]:
             if image["alt"] is None:
@@ -177,6 +202,13 @@ def audit(
                 local_path = (path.parent / src).resolve()
                 if not local_path.is_file():
                     errors.append(f"{label}: local image not found: {src}")
+
+    for index, attribution in enumerate(parser.attributions, 1):
+        label = attribution["plan_id"] or f"attribution-{index}"
+        if attribution["tag"] != "a" or not attribution["href"]:
+            errors.append(f"{label}: .meme-attribution must be a link with an href.")
+        if not attribution["text"]:
+            errors.append(f"{label}: .meme-attribution must contain text.")
 
     if parser.slides:
         allowed = max(1, math.ceil(len(parser.slides) * max_density))
@@ -197,6 +229,11 @@ def audit(
             if isinstance(record.get("id"), str) and record["id"]
         }
         html_by_id: dict[str, dict] = {}
+        attributions_by_id: dict[str, list[dict]] = {}
+        for attribution in parser.attributions:
+            plan_id = attribution["plan_id"]
+            if isinstance(plan_id, str) and plan_id:
+                attributions_by_id.setdefault(plan_id, []).append(attribution)
         for index, meme in enumerate(parser.memes, 1):
             plan_id = meme["plan_id"]
             label = (
@@ -240,23 +277,68 @@ def audit(
                     f"{label}: meme is on slide {slide_id!r}; "
                     f"plan expects {record.get('slide_id')!r}."
                 )
-            if meme["attribution_href"] != record.get("attribution_url"):
+            matching_attributions = attributions_by_id.get(plan_id, [])
+            if not matching_attributions:
                 errors.append(
-                    f"{label}: visible attribution href is "
-                    f"{meme['attribution_href']!r}; plan expects "
-                    f"{record.get('attribution_url')!r}."
+                    f"{label}: missing .meme-attribution for selected placement {plan_id}."
                 )
-            actual_attribution = " ".join(
-                " ".join(meme["attribution_text"]).split()
-            )
+                continue
+            if len(matching_attributions) > 1:
+                errors.append(
+                    f"{label}: multiple .meme-attribution elements map to {plan_id}."
+                )
+                continue
+
+            attribution = matching_attributions[0]
+            expected_location = record.get("attribution_location")
+            if attribution["location"] != expected_location:
+                errors.append(
+                    f"{label}: attribution location is {attribution['location']!r}; "
+                    f"plan expects {expected_location!r}."
+                )
+            if expected_location == "on-slide" and (
+                not attribution["inside_figure"]
+                or attribution["containing_plan_id"] != plan_id
+            ):
+                errors.append(
+                    f"{label}: on-slide attribution must be inside its meme figure."
+                )
+            if expected_location in {"credits-slide", "speaker-notes"} and attribution[
+                "inside_figure"
+            ]:
+                errors.append(
+                    f"{label}: {expected_location} attribution must be outside the "
+                    "meme figure and identify data-meme-plan-id."
+                )
+            if (
+                expected_location == "credits-slide"
+                and not attribution["inside_credits_slide"]
+            ):
+                errors.append(
+                    f"{label}: credits-slide attribution must be inside a slide "
+                    "classed as credits, credits-slide, references, or sources."
+                )
+            if (
+                expected_location == "speaker-notes"
+                and not attribution["inside_speaker_notes"]
+            ):
+                errors.append(
+                    f"{label}: speaker-notes attribution must be inside an element "
+                    "with class speaker-notes or data-speaker-notes."
+                )
+            if attribution["href"] != record.get("attribution_url"):
+                errors.append(
+                    f"{label}: attribution href is {attribution['href']!r}; plan "
+                    f"expects {record.get('attribution_url')!r}."
+                )
+            actual_attribution = " ".join(" ".join(attribution["text"]).split())
             expected_attribution = " ".join(
                 str(record.get("attribution_text") or "").split()
             )
             if actual_attribution != expected_attribution:
                 errors.append(
-                    f"{label}: visible attribution text is "
-                    f"{actual_attribution!r}; plan expects "
-                    f"{expected_attribution!r}."
+                    f"{label}: attribution text is {actual_attribution!r}; plan "
+                    f"expects {expected_attribution!r}."
                 )
 
         for plan_id in selected_by_id.keys() - html_by_id.keys():

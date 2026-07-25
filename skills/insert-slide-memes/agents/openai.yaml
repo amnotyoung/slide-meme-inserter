@@ -1,4 +1,4 @@
 interface:
   display_name: "Slide Meme Inserter"
-  short_description: "Plan or place rights-cleared memes in HTML decks"
-  default_prompt: "Use $insert-slide-memes to add a rights-cleared supplied meme or find a fitting recognizable meme with a documented legal basis."
+  short_description: "Plan or place rights-reviewed memes in HTML decks"
+  default_prompt: "Use $insert-slide-memes to choose strict or practical rights mode, then add a supplied or fitting recognizable meme after the required review."

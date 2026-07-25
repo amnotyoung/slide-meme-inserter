@@ -60,6 +60,7 @@ After selecting a candidate, store the executable plan as JSON:
 {
   "plan_version": 1,
   "audience": "Intended audience",
+  "rights_mode": "strict",
   "placements": [
     {
       "id": "m01",
@@ -106,6 +107,7 @@ After selecting a candidate, store the executable plan as JSON:
       "asset_source": "https://example.com/image.jpg",
       "attribution_text": "Example Creator — Licensed Template, CC BY 4.0",
       "attribution_url": "https://example.com/license",
+      "attribution_location": "on-slide",
       "source": "https://example.com/license",
       "rights_status": "cleared",
       "distribution": "internal",
@@ -175,7 +177,7 @@ Keep the humor job provisional while planning the outline. Commit to an exact te
 3. the audience recognition basis is recorded and is not an unsupported assumption;
 4. all seven score dimensions are recorded and satisfy the threshold;
 5. semantic, original, asset, attribution, and rights fields remain distinct;
-6. the legal basis covers every intended use mode and additional rights are reviewed;
+6. the strict legal basis or practical review covers the selected rights mode and additional rights are reviewed;
 7. any material presenter-identity signal has explicit user approval;
 8. a callback points to an earlier setup;
 9. the layout can survive the target and smaller viewport; and
@@ -190,7 +192,7 @@ Drop the meme instead of forcing a weak candidate.
 - Map `role` to `data-meme-role`.
 - Map `template` to `data-meme-template`.
 - Map `source` and `attribution_url` to `data-meme-source`.
-- Render `attribution_text` as a visible `.meme-attribution` link to `attribution_url`.
+- Render `attribution_text` as a `.meme-attribution` link to `attribution_url` at `attribution_location`.
 - Map `origin` to `data-meme-origin`.
 - Put localized punchline text in HTML, not only inside the raster image.
 - Keep `alt` text descriptive rather than duplicating the punchline.

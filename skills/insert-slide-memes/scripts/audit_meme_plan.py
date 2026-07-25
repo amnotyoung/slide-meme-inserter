@@ -34,20 +34,27 @@ ALLOWED_IDENTITY_LEVELS = {"none", "low", "material"}
 ALLOWED_RIGHTS_STATUSES = {
     "cleared",
     "exception-reviewed",
+    "practical-reviewed",
     "unclear",
     "user-provided-unverified",
+}
+ALLOWED_RIGHTS_MODES = {"strict", "practical"}
+ALLOWED_ATTRIBUTION_LOCATIONS = {
+    "strict": {"on-slide", "credits-slide"},
+    "practical": {"on-slide", "credits-slide", "speaker-notes"},
 }
 ALLOWED_DISTRIBUTIONS = {"internal", "external-limited", "public"}
 ALLOWED_USE_MODES = {
     "live-internal",
     "internal-file-share",
     "live-client",
+    "external-file-share",
     "paid-event",
     "public-pdf",
     "public-recording",
     "online-publication",
 }
-EXTERNAL_USE_MODES = {"live-client", "paid-event"}
+EXTERNAL_USE_MODES = {"live-client", "external-file-share", "paid-event"}
 PUBLIC_USE_MODES = {"public-pdf", "public-recording", "online-publication"}
 ALLOWED_LEGAL_BASES = {
     "license",
@@ -85,6 +92,15 @@ ADDITIONAL_RIGHTS_FIELDS = {
     "portrait_publicity": {"not-applicable", "permission", "reviewed"},
     "trademark": {"not-applicable", "permission", "descriptive-use", "reviewed"},
 }
+PRACTICAL_REVIEW_FIELDS = (
+    "transformative_context",
+    "necessity",
+    "amount_resolution",
+    "market_substitution",
+    "moral_personality_risk",
+    "attribution_method",
+    "checked_at",
+)
 
 HARD_GATES = (
     "established_format",
@@ -294,6 +310,55 @@ def _audit_legal_basis(
             )
 
 
+def _audit_practical_scope(
+    record: dict[str, Any],
+    label: str,
+    use_modes: list[str],
+    errors: list[str],
+) -> None:
+    if set(use_modes) != {"live-internal"} or record.get("distribution") != "internal":
+        errors.append(
+            f"{label}: practical mode is limited to live-internal use with internal "
+            "distribution; file sharing, clients, paid events, exports, recordings, "
+            "and publication require strict mode."
+        )
+
+
+def _audit_practical_review(
+    record: dict[str, Any],
+    label: str,
+    errors: list[str],
+) -> None:
+    review = record.get("practical_review")
+    if not isinstance(review, dict):
+        errors.append(
+            f"{label}: rights_status 'practical-reviewed' requires a "
+            "practical_review object."
+        )
+        return
+
+    for field in PRACTICAL_REVIEW_FIELDS:
+        _required_string(review, field, f"{label}.practical_review", errors)
+    if (
+        _is_nonempty_string(review.get("attribution_method"))
+        and review["attribution_method"] != record.get("attribution_location")
+    ):
+        errors.append(
+            f"{label}: practical_review.attribution_method must equal "
+            "attribution_location."
+        )
+    if review.get("no_recording_or_distribution") is not True:
+        errors.append(
+            f"{label}: practical_review.no_recording_or_distribution must be true."
+        )
+    scores = record.get("scores")
+    if isinstance(scores, dict) and scores.get("safety_rights") != 1:
+        errors.append(
+            f"{label}: practical-reviewed searched assets must score "
+            "scores.safety_rights as 1, not as documented clearance."
+        )
+
+
 def _audit_hard_gates(
     record: dict[str, Any],
     label: str,
@@ -394,6 +459,11 @@ def audit_plan_data(
         errors.append("Plan root: plan_version must be 1.")
     if not _is_nonempty_string(plan.get("audience")):
         errors.append("Plan root: audience must be a non-empty string.")
+    rights_mode = plan.get("rights_mode")
+    if rights_mode not in ALLOWED_RIGHTS_MODES:
+        errors.append(
+            f"Plan root: rights_mode must be one of {sorted(ALLOWED_RIGHTS_MODES)}."
+        )
 
     placements = plan.get("placements")
     if not isinstance(placements, list):
@@ -438,6 +508,7 @@ def audit_plan_data(
             "source",
             "attribution_text",
             "attribution_url",
+            "attribution_location",
             "layout",
             "risk",
         ):
@@ -465,6 +536,8 @@ def audit_plan_data(
             continue
 
         use_modes = _audit_use_modes(record, label, errors)
+        if rights_mode == "practical":
+            _audit_practical_scope(record, label, use_modes, errors)
         rights_status = record.get("rights_status")
         if rights_status not in ALLOWED_RIGHTS_STATUSES:
             errors.append(
@@ -472,11 +545,29 @@ def audit_plan_data(
             )
         elif rights_status in {"unclear", "user-provided-unverified"}:
             errors.append(
-                f"{label}: unresolved rights cannot be selected for any use mode; "
-                "keep the placement provisional or drop it."
+                f"{label}: unresolved rights cannot be selected; keep the placement "
+                "provisional, drop it, or complete the review required by rights_mode."
             )
 
-        _audit_legal_basis(record, label, use_modes, errors)
+        attribution_location = record.get("attribution_location")
+        allowed_locations = ALLOWED_ATTRIBUTION_LOCATIONS.get(rights_mode, set())
+        if attribution_location not in allowed_locations:
+            errors.append(
+                f"{label}: attribution_location must be one of "
+                f"{sorted(allowed_locations)} in {rights_mode!r} mode."
+            )
+
+        if rights_mode == "practical" and rights_status == "practical-reviewed":
+            _audit_practical_review(record, label, errors)
+        elif rights_status in {"cleared", "exception-reviewed"}:
+            _audit_legal_basis(record, label, use_modes, errors)
+        elif rights_status == "practical-reviewed":
+            errors.append(
+                f"{label}: rights_status 'practical-reviewed' is allowed only in "
+                "practical mode."
+            )
+        elif rights_mode == "strict":
+            _audit_legal_basis(record, label, use_modes, errors)
         _audit_additional_rights(record, label, errors)
         _audit_identity(record, label, errors)
 
