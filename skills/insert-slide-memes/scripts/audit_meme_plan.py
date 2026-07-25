@@ -31,8 +31,60 @@ ALLOWED_RECOGNITION_BASES = {
     "user-approved",
 }
 ALLOWED_IDENTITY_LEVELS = {"none", "low", "material"}
-ALLOWED_RIGHTS_STATUSES = {"cleared", "unclear", "user-provided-unverified"}
-ALLOWED_DISTRIBUTIONS = {"internal", "public"}
+ALLOWED_RIGHTS_STATUSES = {
+    "cleared",
+    "exception-reviewed",
+    "unclear",
+    "user-provided-unverified",
+}
+ALLOWED_DISTRIBUTIONS = {"internal", "external-limited", "public"}
+ALLOWED_USE_MODES = {
+    "live-internal",
+    "internal-file-share",
+    "live-client",
+    "paid-event",
+    "public-pdf",
+    "public-recording",
+    "online-publication",
+}
+EXTERNAL_USE_MODES = {"live-client", "paid-event"}
+PUBLIC_USE_MODES = {"public-pdf", "public-recording", "online-publication"}
+ALLOWED_LEGAL_BASES = {
+    "license",
+    "permission",
+    "public-domain",
+    "quotation-art-28",
+    "fair-use-art-35-5",
+    "school-education-art-25",
+}
+CLEARANCE_BASES = {"license", "permission", "public-domain"}
+EXCEPTION_ANALYSIS_FIELDS = {
+    "quotation-art-28": (
+        "purpose",
+        "main_subordinate",
+        "necessary_amount",
+        "fair_practice",
+        "market_effect",
+        "attribution",
+    ),
+    "fair-use-art-35-5": (
+        "purpose_character",
+        "work_nature",
+        "amount_importance",
+        "market_effect",
+    ),
+    "school-education-art-25": (
+        "institution_basis",
+        "class_purpose",
+        "necessary_scope",
+        "compensation_access",
+    ),
+}
+ADDITIONAL_RIGHTS_FIELDS = {
+    "moral_rights": {"not-modified", "permitted", "reviewed"},
+    "portrait_publicity": {"not-applicable", "permission", "reviewed"},
+    "trademark": {"not-applicable", "permission", "descriptive-use", "reviewed"},
+}
 
 HARD_GATES = (
     "established_format",
@@ -74,6 +126,172 @@ def _is_nonempty_string(value: Any) -> bool:
 def _required_string(record: dict[str, Any], field: str, label: str, errors: list[str]) -> None:
     if not _is_nonempty_string(record.get(field)):
         errors.append(f"{label}: missing or empty {field}.")
+
+
+def _audit_use_modes(
+    record: dict[str, Any],
+    label: str,
+    errors: list[str],
+) -> list[str]:
+    use_modes = record.get("use_modes")
+    if not isinstance(use_modes, list) or not use_modes:
+        errors.append(f"{label}: use_modes must be a non-empty array.")
+        return []
+    if any(not _is_nonempty_string(value) for value in use_modes):
+        errors.append(f"{label}: every use_modes value must be a non-empty string.")
+        return []
+
+    unknown = sorted(set(use_modes) - ALLOWED_USE_MODES)
+    if unknown:
+        errors.append(
+            f"{label}: unsupported use_modes {unknown}; allowed values are "
+            f"{sorted(ALLOWED_USE_MODES)}."
+        )
+    if len(set(use_modes)) != len(use_modes):
+        errors.append(f"{label}: use_modes must not contain duplicates.")
+
+    distribution = record.get("distribution")
+    if distribution not in ALLOWED_DISTRIBUTIONS:
+        errors.append(
+            f"{label}: distribution must be one of {sorted(ALLOWED_DISTRIBUTIONS)}."
+        )
+    else:
+        expected = "internal"
+        if set(use_modes) & PUBLIC_USE_MODES:
+            expected = "public"
+        elif set(use_modes) & EXTERNAL_USE_MODES:
+            expected = "external-limited"
+        if distribution != expected:
+            errors.append(
+                f"{label}: distribution {distribution!r} does not match use_modes; "
+                f"expected {expected!r}."
+            )
+    return use_modes
+
+
+def _audit_additional_rights(
+    record: dict[str, Any],
+    label: str,
+    errors: list[str],
+) -> None:
+    checks = record.get("additional_rights")
+    if not isinstance(checks, dict):
+        errors.append(f"{label}: additional_rights must be an object.")
+        return
+
+    for field, allowed_statuses in ADDITIONAL_RIGHTS_FIELDS.items():
+        check = checks.get(field)
+        if not isinstance(check, dict):
+            errors.append(f"{label}: additional_rights.{field} must be an object.")
+            continue
+        status = check.get("status")
+        if status not in allowed_statuses:
+            errors.append(
+                f"{label}: additional_rights.{field}.status must be one of "
+                f"{sorted(allowed_statuses)}."
+            )
+        if not _is_nonempty_string(check.get("note")):
+            errors.append(
+                f"{label}: additional_rights.{field}.note must explain the check."
+            )
+
+
+def _audit_legal_basis(
+    record: dict[str, Any],
+    label: str,
+    use_modes: list[str],
+    errors: list[str],
+) -> None:
+    basis = record.get("legal_basis")
+    if not isinstance(basis, dict):
+        errors.append(f"{label}: selected placement requires a legal_basis object.")
+        return
+
+    basis_type = basis.get("type")
+    if basis_type not in ALLOWED_LEGAL_BASES:
+        errors.append(
+            f"{label}: legal_basis.type must be one of {sorted(ALLOWED_LEGAL_BASES)}."
+        )
+        return
+
+    _required_string(basis, "evidence", f"{label}.legal_basis", errors)
+    _required_string(basis, "checked_at", f"{label}.legal_basis", errors)
+    _required_string(basis, "jurisdiction", f"{label}.legal_basis", errors)
+
+    rights_status = record.get("rights_status")
+    expected_status = "cleared" if basis_type in CLEARANCE_BASES else "exception-reviewed"
+    if rights_status != expected_status:
+        errors.append(
+            f"{label}: legal basis {basis_type} requires rights_status "
+            f"{expected_status!r}, not {rights_status!r}."
+        )
+
+    if basis_type in {"license", "permission"}:
+        _required_string(basis, "rights_holder", f"{label}.legal_basis", errors)
+        scope = basis.get("scope")
+        if not isinstance(scope, dict):
+            errors.append(f"{label}: {basis_type} legal_basis requires a scope object.")
+            return
+        scoped_modes = scope.get("use_modes")
+        if not isinstance(scoped_modes, list) or any(
+            not _is_nonempty_string(value) for value in scoped_modes
+        ):
+            errors.append(
+                f"{label}: legal_basis.scope.use_modes must be an array of strings."
+            )
+        else:
+            unknown_scoped_modes = sorted(set(scoped_modes) - ALLOWED_USE_MODES)
+            if unknown_scoped_modes:
+                errors.append(
+                    f"{label}: legal_basis.scope has unsupported use_modes "
+                    f"{unknown_scoped_modes}."
+                )
+            uncovered = sorted(set(use_modes) - set(scoped_modes))
+            if uncovered:
+                errors.append(
+                    f"{label}: legal_basis.scope does not cover use_modes {uncovered}."
+                )
+        for field in ("commercial_use", "modification"):
+            if not isinstance(scope.get(field), bool):
+                errors.append(
+                    f"{label}: legal_basis.scope.{field} must be true or false."
+                )
+        if "paid-event" in use_modes and scope.get("commercial_use") is not True:
+            errors.append(
+                f"{label}: paid-event use requires commercial_use permission."
+            )
+        for field in ("territory", "expiration"):
+            _required_string(scope, field, f"{label}.legal_basis.scope", errors)
+    elif basis_type == "public-domain":
+        _required_string(basis, "rationale", f"{label}.legal_basis", errors)
+    else:
+        analysis = basis.get("analysis")
+        if not isinstance(analysis, dict):
+            errors.append(
+                f"{label}: {basis_type} legal_basis requires an analysis object."
+            )
+            return
+        analyzed_modes = analysis.get("use_modes")
+        if not isinstance(analyzed_modes, list) or any(
+            not _is_nonempty_string(value) for value in analyzed_modes
+        ):
+            errors.append(
+                f"{label}: legal_basis.analysis.use_modes must be an array of strings."
+            )
+        else:
+            uncovered = sorted(set(use_modes) - set(analyzed_modes))
+            if uncovered:
+                errors.append(
+                    f"{label}: statutory-exception analysis does not cover "
+                    f"use_modes {uncovered}."
+                )
+        for field in EXCEPTION_ANALYSIS_FIELDS[basis_type]:
+            _required_string(
+                analysis,
+                field,
+                f"{label}.legal_basis.analysis",
+                errors,
+            )
 
 
 def _audit_hard_gates(
@@ -218,10 +436,22 @@ def audit_plan_data(
             "template",
             "caption",
             "source",
+            "attribution_text",
+            "attribution_url",
             "layout",
             "risk",
         ):
             _required_string(record, field, label, errors)
+
+        if (
+            _is_nonempty_string(record.get("source"))
+            and _is_nonempty_string(record.get("attribution_url"))
+            and record["source"] != record["attribution_url"]
+        ):
+            errors.append(
+                f"{label}: source must equal attribution_url so HTML exposes the "
+                "actual attribution source, not a semantic or discovery page."
+            )
 
         role = record.get("role")
         if role not in ALLOWED_ROLES:
@@ -234,17 +464,20 @@ def audit_plan_data(
             errors.append(f"{label}: invalid origin {origin!r}.")
             continue
 
-        distribution = record.get("distribution")
-        if distribution not in ALLOWED_DISTRIBUTIONS:
-            errors.append(f"{label}: distribution must be internal or public.")
+        use_modes = _audit_use_modes(record, label, errors)
         rights_status = record.get("rights_status")
         if rights_status not in ALLOWED_RIGHTS_STATUSES:
             errors.append(
                 f"{label}: rights_status must be one of {sorted(ALLOWED_RIGHTS_STATUSES)}."
             )
-        if distribution == "public" and rights_status != "cleared":
-            errors.append(f"{label}: public distribution requires cleared rights.")
+        elif rights_status in {"unclear", "user-provided-unverified"}:
+            errors.append(
+                f"{label}: unresolved rights cannot be selected for any use mode; "
+                "keep the placement provisional or drop it."
+            )
 
+        _audit_legal_basis(record, label, use_modes, errors)
+        _audit_additional_rights(record, label, errors)
         _audit_identity(record, label, errors)
 
         if origin == "searched":

@@ -104,9 +104,40 @@ After selecting a candidate, store the executable plan as JSON:
       "semantic_source": "https://example.com/meaning",
       "original_source": "https://example.com/original",
       "asset_source": "https://example.com/image.jpg",
-      "source": "https://example.com/meaning",
-      "rights_status": "unclear",
+      "attribution_text": "Example Creator — Licensed Template, CC BY 4.0",
+      "attribution_url": "https://example.com/license",
+      "source": "https://example.com/license",
+      "rights_status": "cleared",
       "distribution": "internal",
+      "use_modes": ["live-internal"],
+      "legal_basis": {
+        "type": "license",
+        "jurisdiction": "KR",
+        "evidence": "https://example.com/license",
+        "checked_at": "2026-07-25",
+        "rights_holder": "Example Creator",
+        "scope": {
+          "use_modes": ["live-internal"],
+          "commercial_use": false,
+          "modification": true,
+          "territory": "worldwide",
+          "expiration": "none"
+        }
+      },
+      "additional_rights": {
+        "moral_rights": {
+          "status": "not-modified",
+          "note": "The raster is not altered."
+        },
+        "portrait_publicity": {
+          "status": "not-applicable",
+          "note": "No identifiable natural person appears."
+        },
+        "trademark": {
+          "status": "not-applicable",
+          "note": "No third-party mark appears."
+        }
+      },
       "layout": "Sidecar",
       "risk": "Low"
     }
@@ -144,10 +175,11 @@ Keep the humor job provisional while planning the outline. Commit to an exact te
 3. the audience recognition basis is recorded and is not an unsupported assumption;
 4. all seven score dimensions are recorded and satisfy the threshold;
 5. semantic, original, asset, attribution, and rights fields remain distinct;
-6. any material presenter-identity signal has explicit user approval;
-7. a callback points to an earlier setup;
-8. the layout can survive the target and smaller viewport; and
-9. `audit_meme_plan.py --strict` passes.
+6. the legal basis covers every intended use mode and additional rights are reviewed;
+7. any material presenter-identity signal has explicit user approval;
+8. a callback points to an earlier setup;
+9. the layout can survive the target and smaller viewport; and
+10. `audit_meme_plan.py --strict` passes.
 
 Drop the meme instead of forcing a weak candidate.
 
@@ -157,7 +189,8 @@ Drop the meme instead of forcing a weak candidate.
 - Map the placement `id` to `data-meme-plan-id`.
 - Map `role` to `data-meme-role`.
 - Map `template` to `data-meme-template`.
-- Map `source` to `data-meme-source`.
+- Map `source` and `attribution_url` to `data-meme-source`.
+- Render `attribution_text` as a visible `.meme-attribution` link to `attribution_url`.
 - Map `origin` to `data-meme-origin`.
 - Put localized punchline text in HTML, not only inside the raster image.
 - Keep `alt` text descriptive rather than duplicating the punchline.

@@ -29,7 +29,7 @@ def valid_plan() -> dict:
                 "callback_to": None,
                 "communicative_job": "Release tension after inconsistent results",
                 "intended_response": "Shared recognition",
-                "template": "Confused Travolta",
+                "template": "Licensed Reaction Template",
                 "caption": "분명 저장했습니다. 어디에 저장했는지만 빼고.",
                 "asset_kind": "meme-template",
                 "recognition_basis": "broad-recognition",
@@ -60,12 +60,43 @@ def valid_plan() -> dict:
                 "score_total": 13,
                 "ubiquity_penalty": 0,
                 "adjusted_score": 13,
-                "semantic_source": "https://example.com/confused-travolta-meaning",
+                "semantic_source": "https://example.com/licensed-template-meaning",
                 "original_source": "https://example.com/original",
-                "asset_source": "https://example.com/confused-travolta.jpg",
-                "source": "https://example.com/confused-travolta-meaning",
-                "rights_status": "unclear",
+                "asset_source": "https://example.com/licensed-template.jpg",
+                "attribution_text": "Example Creator — Licensed Template, CC BY 4.0",
+                "attribution_url": "https://example.com/license",
+                "source": "https://example.com/license",
+                "rights_status": "cleared",
                 "distribution": "internal",
+                "use_modes": ["live-internal"],
+                "legal_basis": {
+                    "type": "license",
+                    "jurisdiction": "KR",
+                    "evidence": "https://example.com/license",
+                    "checked_at": "2026-07-25",
+                    "rights_holder": "Example Creator",
+                    "scope": {
+                        "use_modes": ["live-internal"],
+                        "commercial_use": False,
+                        "modification": True,
+                        "territory": "worldwide",
+                        "expiration": "none",
+                    },
+                },
+                "additional_rights": {
+                    "moral_rights": {
+                        "status": "not-modified",
+                        "note": "The raster is not altered.",
+                    },
+                    "portrait_publicity": {
+                        "status": "not-applicable",
+                        "note": "No identifiable natural person appears.",
+                    },
+                    "trademark": {
+                        "status": "not-applicable",
+                        "note": "No third-party mark appears.",
+                    },
+                },
                 "layout": "Sidecar",
                 "risk": "Low",
             }
@@ -108,12 +139,13 @@ class MemePlanAuditTests(unittest.TestCase):
         errors, _, _ = audit_plan_data(plan)
         self.assertTrue(any("hard gate semantic_match" in error for error in errors))
 
-    def test_user_provided_exact_asset_may_bypass_format_gate(self) -> None:
+    def test_user_provided_unverified_asset_stays_provisional(self) -> None:
         plan = valid_plan()
         placement = plan["placements"][0]
+        placement["status"] = "provisional"
         placement["origin"] = "user-provided"
         placement["template"] = "User-provided exact asset"
-        placement["source"] = "user-provided"
+        placement["source"] = "pending"
         placement["rights_status"] = "user-provided-unverified"
         placement["user_locked"] = {"asset": True, "placement": True, "caption": False}
         placement["hard_gates"]["established_format"] = False
@@ -134,15 +166,72 @@ class MemePlanAuditTests(unittest.TestCase):
         errors, warnings, selected = audit_plan_data(plan)
         self.assertEqual(errors, [])
         self.assertEqual(warnings, [])
-        self.assertEqual([record["id"] for record in selected], ["m01"])
+        self.assertEqual(selected, [])
 
-    def test_public_distribution_requires_cleared_rights(self) -> None:
+    def test_user_provided_unverified_asset_cannot_be_selected(self) -> None:
         plan = valid_plan()
-        plan["placements"][0]["distribution"] = "public"
+        placement = plan["placements"][0]
+        placement["origin"] = "user-provided"
+        placement["template"] = "User-provided exact asset"
+        placement["rights_status"] = "user-provided-unverified"
+        placement["user_locked"] = {"asset": True}
         errors, _, _ = audit_plan_data(plan)
         self.assertTrue(
-            any("public distribution requires cleared rights" in error for error in errors)
+            any("unresolved rights cannot be selected" in error for error in errors)
         )
+
+    def test_internal_searched_asset_with_unclear_rights_is_rejected(self) -> None:
+        plan = valid_plan()
+        placement = plan["placements"][0]
+        placement["rights_status"] = "unclear"
+        placement.pop("legal_basis")
+        errors, _, _ = audit_plan_data(plan)
+        joined = "\n".join(errors)
+        self.assertIn("unresolved rights cannot be selected", joined)
+        self.assertIn("requires a legal_basis object", joined)
+
+    def test_new_public_use_requires_matching_license_scope(self) -> None:
+        plan = valid_plan()
+        placement = plan["placements"][0]
+        placement["distribution"] = "public"
+        placement["use_modes"] = ["live-internal", "public-pdf"]
+        errors, _, _ = audit_plan_data(plan)
+        self.assertTrue(
+            any("scope does not cover use_modes ['public-pdf']" in error for error in errors)
+        )
+
+    def test_paid_event_requires_commercial_permission(self) -> None:
+        plan = valid_plan()
+        placement = plan["placements"][0]
+        placement["distribution"] = "external-limited"
+        placement["use_modes"] = ["paid-event"]
+        placement["legal_basis"]["scope"]["use_modes"] = ["paid-event"]
+        errors, _, _ = audit_plan_data(plan)
+        self.assertTrue(
+            any("paid-event use requires commercial_use permission" in error for error in errors)
+        )
+
+    def test_reviewed_fair_use_basis_passes(self) -> None:
+        plan = valid_plan()
+        placement = plan["placements"][0]
+        placement["rights_status"] = "exception-reviewed"
+        placement["legal_basis"] = {
+            "type": "fair-use-art-35-5",
+            "jurisdiction": "KR",
+            "evidence": "Documented four-factor review in the plan",
+            "checked_at": "2026-07-25",
+            "analysis": {
+                "use_modes": ["live-internal"],
+                "purpose_character": "The slide critiques the meme itself.",
+                "work_nature": "The source was previously published.",
+                "amount_importance": "Only the portion necessary for criticism is used.",
+                "market_effect": "The low-resolution excerpt does not replace demand.",
+            },
+        }
+        errors, warnings, selected = audit_plan_data(plan)
+        self.assertEqual(errors, [])
+        self.assertEqual(warnings, [])
+        self.assertEqual([record["id"] for record in selected], ["m01"])
 
     def test_drx_wallpaper_regression_is_rejected(self) -> None:
         fixture = ROOT / "tests" / "fixtures" / "drx-wallpaper-selected.json"
@@ -170,8 +259,42 @@ class HtmlPlanCrossCheckTests(unittest.TestCase):
                     class="slide-meme"
                     data-meme-plan-id="m01"
                     data-meme-role="reaction"
-                    data-meme-template="Confused Travolta"
-                    data-meme-source="https://example.com/confused-travolta-meaning"
+                    data-meme-template="Licensed Reaction Template"
+                    data-meme-source="https://example.com/license"
+                    data-meme-origin="searched"
+                  >
+                    <img src="meme.jpg" alt="A confused person looks around" />
+                    <figcaption>분명 저장했습니다. 어디에 저장했는지만 빼고.</figcaption>
+                    <a class="meme-attribution" href="https://example.com/license">
+                      Example Creator — Licensed Template, CC BY 4.0
+                    </a>
+                  </figure>
+                </section>
+                """,
+                encoding="utf-8",
+            )
+
+            errors, warnings, _ = audit(html_path, 0.20, plan_path)
+            self.assertEqual(errors, [])
+            self.assertEqual(warnings, [])
+
+    def test_visible_attribution_is_required(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            plan_path = tmp_path / "meme-plan.json"
+            html_path = tmp_path / "deck.html"
+            image_path = tmp_path / "meme.jpg"
+            plan_path.write_text(json.dumps(valid_plan()), encoding="utf-8")
+            image_path.write_bytes(b"test-image")
+            html_path.write_text(
+                """
+                <section id="s08">
+                  <figure
+                    class="slide-meme"
+                    data-meme-plan-id="m01"
+                    data-meme-role="reaction"
+                    data-meme-template="Licensed Reaction Template"
+                    data-meme-source="https://example.com/license"
                     data-meme-origin="searched"
                   >
                     <img src="meme.jpg" alt="A confused person looks around" />
@@ -182,9 +305,45 @@ class HtmlPlanCrossCheckTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            errors, warnings, _ = audit(html_path, 0.20, plan_path)
-            self.assertEqual(errors, [])
-            self.assertEqual(warnings, [])
+            errors, _, _ = audit(html_path, 0.20, plan_path)
+            self.assertTrue(
+                any("missing visible .meme-attribution" in error for error in errors)
+            )
+
+    def test_visible_attribution_must_match_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            plan_path = tmp_path / "meme-plan.json"
+            html_path = tmp_path / "deck.html"
+            image_path = tmp_path / "meme.jpg"
+            plan_path.write_text(json.dumps(valid_plan()), encoding="utf-8")
+            image_path.write_bytes(b"test-image")
+            html_path.write_text(
+                """
+                <section id="s08">
+                  <figure
+                    class="slide-meme"
+                    data-meme-plan-id="m01"
+                    data-meme-role="reaction"
+                    data-meme-template="Licensed Reaction Template"
+                    data-meme-source="https://example.com/license"
+                    data-meme-origin="searched"
+                  >
+                    <img src="meme.jpg" alt="A confused person looks around" />
+                    <figcaption>분명 저장했습니다. 어디에 저장했는지만 빼고.</figcaption>
+                    <a class="meme-attribution" href="https://example.com/license">
+                      Wrong attribution
+                    </a>
+                  </figure>
+                </section>
+                """,
+                encoding="utf-8",
+            )
+
+            errors, _, _ = audit(html_path, 0.20, plan_path)
+            self.assertTrue(
+                any("visible attribution text" in error for error in errors)
+            )
 
     def test_html_plan_mismatch_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -216,8 +375,8 @@ class HtmlPlanCrossCheckTests(unittest.TestCase):
             errors, _, _ = audit(html_path, 0.20, plan_path)
             joined = "\n".join(errors)
             self.assertIn("plan expects 'reaction'", joined)
-            self.assertIn("plan expects 'Confused Travolta'", joined)
-            self.assertIn("plan expects 'https://example.com/confused-travolta-meaning'", joined)
+            self.assertIn("plan expects 'Licensed Reaction Template'", joined)
+            self.assertIn("plan expects 'https://example.com/license'", joined)
 
 
 class DensityAuditTests(unittest.TestCase):
@@ -242,6 +401,9 @@ class DensityAuditTests(unittest.TestCase):
                   >
                     <img src="meme.jpg" alt="A recognizable reaction" />
                     <figcaption>Reaction {slide_number}</figcaption>
+                    <a class="meme-attribution" href="https://example.com/license">
+                      Example Creator — Licensed Template, CC BY 4.0
+                    </a>
                   </figure>
                 """
             sections.append(

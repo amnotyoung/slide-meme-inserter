@@ -1,7 +1,7 @@
 {
   "name": "slide-meme-inserter",
   "version": "0.1.0",
-  "description": "Plan, source, and insert recognizable memes into HTML slide decks.",
+  "description": "Plan, clear, and insert recognizable memes into HTML slide decks.",
   "author": {
     "name": "amnotyoung",
     "url": "https://github.com/amnotyoung"
@@ -19,8 +19,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Slide Meme Inserter",
-    "shortDescription": "Plan or add recognizable memes to HTML slide decks.",
-    "longDescription": "Create meme-aware HTML presentations from the outline stage or add restrained, context-fitting memes to completed decks.",
+    "shortDescription": "Plan or add rights-cleared memes to HTML slide decks.",
+    "longDescription": "Create meme-aware HTML presentations or add restrained memes to completed decks only after documenting a legal basis, use scope, and attribution.",
     "developerName": "amnotyoung",
     "category": "Productivity",
     "capabilities": [
@@ -31,7 +31,7 @@
     "defaultPrompt": [
       "Add context-fitting, recognizable memes to this HTML slide deck.",
       "Plan a new HTML presentation with restrained meme moments.",
-      "Insert my supplied meme into this deck without changing the image."
+      "Insert my rights-cleared supplied meme into this deck without changing the image."
     ]
   }
 }

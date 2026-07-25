@@ -27,7 +27,7 @@ Treat user-supplied fields as locked unless the user invites alternatives:
 
 Do not silently replace a locked asset with a searched or generated alternative. If it cannot be used safely or legibly, explain the concrete issue and request a replacement or permission to adapt it.
 
-User choice does not override safety, accessibility, source honesty, or layout integrity.
+User choice does not override safety, accessibility, source honesty, layout integrity, or rights clearance.
 
 A user-provided exact asset may bypass the searched-candidate established-format gate. It does not bypass the presenter-identity, audience clarity, semantic fit, rights, or screenshot tests. Treat explicit provision of an exact fandom or gaming asset as approval of that identity signal for the requested placement only; do not generalize that approval to other slides or future decks.
 
@@ -37,18 +37,18 @@ A user-provided exact asset may bypass the searched-candidate established-format
 
 1. Inspect the image before editing the deck.
 2. Preserve the original file.
-3. Copy it under a deck-local ASCII filename or embed it when producing a self-contained HTML file.
+3. Verify permission, license, public-domain status, or a reviewed statutory exception before copying or embedding it.
 4. Do not crop, recolor, remove text, or otherwise edit the raster unless requested.
 5. Set `data-meme-origin="user-provided"`.
-6. Use `data-meme-source="user-provided"` when no verifiable source URL is available.
-7. Record reuse status as user-provided and unverified unless the user supplies rights information.
+6. Set `data-meme-source` to the verified attribution URL and render the same source visibly.
+7. Keep the placement provisional when the user cannot supply rights information or a source that supports an exception analysis.
 
 ### URL
 
 1. Distinguish a source page from a direct image URL.
-2. Download the asset locally; never hotlink it.
-3. Preserve the source-page URL in `data-meme-source` when verified.
-4. Do not infer permission from accessibility.
+2. Verify the legal basis and intended-use scope; do not infer permission from accessibility.
+3. Audit the selected plan, then download the asset locally; never hotlink it.
+4. Preserve the verified attribution URL in `data-meme-source` and visible attribution.
 
 ### Template name only
 
@@ -69,7 +69,7 @@ Add these fields to the meme plan:
 ```yaml
 id: m-user-01
 slide_id: s12
-status: selected
+status: provisional
 origin: user-provided
 role: reaction
 communicative_job: "Use the supplied reaction at the requested beat"
@@ -93,14 +93,14 @@ identity_signal:
   level: "<none, low, or material>"
   domain: "<fandom or identity domain, or null>"
   user_approved: true
-source: "user-provided"
+source: "pending"
 rights_status: "user-provided-unverified"
 distribution: "internal"
 layout: "Requested or inferred layout"
 risk: "Concrete audience, identity, rights, or layout risk"
 ```
 
-Use `status: selected` when the asset and placement are ready. Use `provisional` when required information or permission remains unresolved.
+Use `status: selected` only after adding every field required by [rights-clearance.md](rights-clearance.md) and passing the strict plan audit. Keep unverified assets `provisional` regardless of internal or external use.
 
 ## Delivery
 
@@ -109,5 +109,5 @@ Report:
 - which user-supplied fields were preserved
 - any inferred caption, placement, or layout
 - whether the asset was copied or embedded
-- source and reuse status
+- source, legal basis, intended use modes, and visible attribution
 - any adaptation explicitly approved by the user
