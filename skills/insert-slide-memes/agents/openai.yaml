@@ -1,4 +1,4 @@
 interface:
   display_name: "Slide Meme Inserter"
-  short_description: "Plan, find, or place user-supplied memes in HTML decks"
-  default_prompt: "Use $insert-slide-memes to add my supplied memes or find fitting recognizable memes in postprocess or plan-and-build mode."
+  short_description: "Plan or place rights-cleared memes in HTML decks"
+  default_prompt: "Use $insert-slide-memes to add a rights-cleared supplied meme or find a fitting recognizable meme with a documented legal basis."

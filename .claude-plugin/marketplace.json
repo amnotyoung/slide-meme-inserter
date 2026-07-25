@@ -1,6 +1,6 @@
 {
   "name": "slide-meme-inserter",
-  "description": "HTML 슬라이드에 맥락에 맞는 유명 밈이나 사용자 제공 밈을 기획·삽입하는 플러그인 마켓플레이스입니다.",
+  "description": "HTML 슬라이드에 맥락에 맞고 권리 근거가 확인된 밈을 기획·삽입하는 플러그인 마켓플레이스입니다.",
   "owner": {
     "name": "amnotyoung",
     "url": "https://github.com/amnotyoung"
@@ -9,7 +9,7 @@
     {
       "name": "slide-meme-inserter",
       "source": "./",
-      "description": "HTML 슬라이드 기획 또는 후처리 과정에서 맥락에 맞는 유명 밈이나 사용자 제공 밈을 삽입합니다.",
+      "description": "HTML 슬라이드 기획 또는 후처리 과정에서 권리 근거와 사용 범위를 확인한 밈만 삽입합니다.",
       "version": "0.1.0"
     }
   ]

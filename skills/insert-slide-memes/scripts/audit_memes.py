@@ -25,6 +25,8 @@ class DeckParser(HTMLParser):
         self.slide_tag_stack: list[bool] = []
         self.figure_stack: list[dict | None] = []
         self.memes: list[dict] = []
+        self.attribution_depth = 0
+        self.attribution_meme: dict | None = None
 
     def handle_starttag(self, tag: str, attrs_list: list[tuple[str, str | None]]) -> None:
         attrs = dict(attrs_list)
@@ -53,6 +55,9 @@ class DeckParser(HTMLParser):
                     "origin": attrs.get("data-meme-origin"),
                     "images": [],
                     "has_caption": False,
+                    "has_attribution": False,
+                    "attribution_href": None,
+                    "attribution_text": [],
                 }
                 self.memes.append(meme)
                 if self.slide_stack:
@@ -69,7 +74,28 @@ class DeckParser(HTMLParser):
         if tag == "figcaption" and self.figure_stack and self.figure_stack[-1] is not None:
             self.figure_stack[-1]["has_caption"] = True
 
+        if (
+            self.figure_stack
+            and self.figure_stack[-1] is not None
+            and "meme-attribution" in classes
+        ):
+            meme = self.figure_stack[-1]
+            meme["has_attribution"] = True
+            meme["attribution_href"] = attrs.get("href")
+            self.attribution_depth = 1
+            self.attribution_meme = meme
+        elif self.attribution_depth:
+            self.attribution_depth += 1
+
+    def handle_data(self, data: str) -> None:
+        if self.attribution_depth and self.attribution_meme is not None and data.strip():
+            self.attribution_meme["attribution_text"].append(data.strip())
+
     def handle_endtag(self, tag: str) -> None:
+        if self.attribution_depth:
+            self.attribution_depth -= 1
+            if self.attribution_depth == 0:
+                self.attribution_meme = None
         if tag == "figure" and self.figure_stack:
             self.figure_stack.pop()
         if tag in SLIDE_TAGS and self.slide_tag_stack:
@@ -126,6 +152,15 @@ def audit(
             errors.append(f"{label}: expected exactly one image.")
         if not meme["has_caption"]:
             warnings.append(f"{label}: missing figcaption.")
+        if not meme["has_attribution"]:
+            errors.append(
+                f"{label}: missing visible .meme-attribution element; "
+                "data-meme-source metadata alone is insufficient."
+            )
+        elif not meme["attribution_href"]:
+            errors.append(f"{label}: .meme-attribution must be a link with an href.")
+        if not meme["attribution_text"]:
+            errors.append(f"{label}: .meme-attribution must contain visible text.")
 
         for image in meme["images"]:
             if image["alt"] is None:
@@ -204,6 +239,24 @@ def audit(
                 errors.append(
                     f"{label}: meme is on slide {slide_id!r}; "
                     f"plan expects {record.get('slide_id')!r}."
+                )
+            if meme["attribution_href"] != record.get("attribution_url"):
+                errors.append(
+                    f"{label}: visible attribution href is "
+                    f"{meme['attribution_href']!r}; plan expects "
+                    f"{record.get('attribution_url')!r}."
+                )
+            actual_attribution = " ".join(
+                " ".join(meme["attribution_text"]).split()
+            )
+            expected_attribution = " ".join(
+                str(record.get("attribution_text") or "").split()
+            )
+            if actual_attribution != expected_attribution:
+                errors.append(
+                    f"{label}: visible attribution text is "
+                    f"{actual_attribution!r}; plan expects "
+                    f"{expected_attribution!r}."
                 )
 
         for plan_id in selected_by_id.keys() - html_by_id.keys():

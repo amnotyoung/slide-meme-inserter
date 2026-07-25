@@ -28,7 +28,7 @@ Score a candidate from 0–2 on each dimension:
 | Novelty and fatigue | stale default or likely eye-roll | familiar but still usable | fresh to this audience without becoming obscure |
 | Caption clarity | needs explanation | caption carries it | lands at a glance |
 | Layout fit | displaces content | requires rearrangement | fits without weakening hierarchy |
-| Safety and rights | material concern | manageable with warning | appropriate and reuse status is clear |
+| Safety and rights | unresolved or no legal basis | reviewed exception with bounded risk | documented clearance and complete rights checks |
 
 Apply an additional `-1` ubiquity penalty when a template repeatedly appears as a generic answer across unrelated presentation topics. Common examples include `Confused Math Lady`, `Drake Hotline Bling`, and `This Is Fine`; treat these as illustrative, not as a permanent blacklist. Keep the penalty even when the template remains the best semantic fit.
 
@@ -74,8 +74,8 @@ Use these levels in order. Keep semantic history, original provenance, asset loc
 4. **Determine asset reuse**
    - Check the original page's license, terms, permission, or downloadable press assets separately from provenance.
    - Treat TV, film, webtoon, creator-video, and celebrity stills as `rights unclear` unless reuse permission is explicit. Finding the original does not grant permission.
-   - For internal training with unresolved rights, use a static-image result when appropriate and record the warning and distribution limit.
-   - For public distribution, use only a cleared asset or drop the candidate.
+   - Keep unresolved rights `provisional` even for internal training. Internal use is not permission.
+   - Select only an asset with documented clearance or a completed statutory-exception analysis.
 
 ### Korean static-image workflow
 
@@ -84,12 +84,12 @@ Use this order only after a Korean candidate passes the hard gates:
 1. Run image search with the exact phrase, candidate name, and Korean terms such as `짤`, `이미지`, `PNG`, or `JPG`.
 2. Open the strongest contextual result and locate the actual static image URL rather than downloading the search thumbnail.
 3. Confirm that the asset is the recognizable meme artifact or a faithful template instance. Reject wallpapers, promotional art, and unrelated images that merely share a slogan or topic.
-4. Download the JPG, PNG, WebP, or GIF locally, verify its file type and dimensions, and visually inspect that the expression and baked-in text match the intended meaning.
-5. Record the semantic source, original source, contextual page, and direct asset URL in separate fields.
-6. For internal training with unclear rights, set `rights_status: "unclear"` and `distribution: "internal"`.
-7. Do not play or seek through a video to capture a frame. If no suitable static image is available, ask the user to put the desired image in a local folder or choose another candidate.
+4. Verify a license, permission, public-domain basis, or statutory exception using [rights-clearance.md](rights-clearance.md). Keep the candidate provisional while rights remain unclear.
+5. Record the semantic source, original source, contextual page, direct asset URL, legal evidence, and visible attribution separately.
+6. Audit the selected plan, then download the JPG, PNG, WebP, or GIF locally. Verify its file type and dimensions and visually inspect that the expression and baked-in text match the intended meaning.
+7. Do not play or seek through a video to capture a frame. If no cleared static image is available, ask the user for permission evidence or choose another candidate.
 
-Prefer a user-provided local image when the user already has the desired Korean meme. Preserve that original, copy it into the deck-local asset folder, and record its rights as unverified unless the user supplies permission information.
+Prefer a user-provided local image when the user already has the desired Korean meme, but do not copy or embed it until the user supplies permission evidence or a statutory exception is reviewed. Preserve the input in place and keep the placement provisional while rights are unverified.
 
 Record the result as:
 
@@ -102,8 +102,10 @@ original_source:
   work: "<post, article, video, episode, or other original work>"
   url: "<original URL>"
 asset_url: "<direct JPG, PNG, WebP, or GIF URL>"
-rights_status: "<cleared, unclear, or user-provided-unverified>"
-distribution: "<internal or public>"
+rights_status: "<cleared, exception-reviewed, unclear, or user-provided-unverified>"
+legal_basis: "<documented basis from rights-clearance.md>"
+use_modes: ["<every planned use>"]
+distribution: "<internal, external-limited, or public>"
 ```
 
 Do not use ZzalBot or a similar aggregation page as a rights authority. Its presence can support discovery only when it leads to a concrete candidate that passes the remaining levels.
@@ -164,10 +166,10 @@ Add or localize the caption in HTML when practical rather than baking text into 
 For external assets:
 
 1. Verify the source page and reuse terms.
-2. Download a suitable local copy.
-3. Record the source URL and license or permission status.
-4. Preserve attribution if required.
-5. Do not treat search-result availability as permission.
+2. Document the legal basis and confirm that its scope covers every intended use mode.
+3. Audit the plan before downloading a suitable local copy.
+4. Record the source URL, legal evidence, and visible attribution.
+5. Do not treat search-result availability, source credit, user provision, or internal use as permission.
 
 ## Layout patterns
 
@@ -190,5 +192,7 @@ For every meme, ask:
 6. Did a familiar default win because it was truly best after the novelty and ubiquity checks, rather than because it was the first recognizable result?
 7. Does the asset read as the intended meme rather than the presenter's fandom, endorsement, or hobby?
 8. Did the candidate pass every hard gate before asset availability or source convenience influenced the choice?
+9. Does the documented legal basis cover every planned presentation, export, share, and recording mode?
+10. Are attribution and any moral-rights, portrait/publicity, and trademark issues resolved?
 
 Remove the meme if any answer is no.
