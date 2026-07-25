@@ -148,7 +148,7 @@ def audit(
         if len(parser.memes) > allowed:
             warnings.append(
                 f"Deck has {len(parser.memes)} memes across {len(parser.slides)} slides; "
-                f"density target allows about {allowed}."
+                f"the selected density ceiling allows about {allowed}."
             )
 
     if plan_path is not None:
@@ -219,7 +219,10 @@ def main() -> int:
         "--max-density",
         type=float,
         default=0.20,
-        help="Maximum target meme-to-slide ratio (default: 0.20)",
+        help=(
+            "Soft maximum meme-to-slide ratio for structural QA "
+            "(default: 0.20; choose an audience-appropriate value)"
+        ),
     )
     arg_parser.add_argument(
         "--strict",

@@ -119,6 +119,20 @@ Prefer one role per asset. A callback usually works better than introducing thre
 
 ## Timing
 
+### Adaptive density
+
+Do not use a fixed whole-deck maximum. Estimate a soft planning ceiling from the audience and setting:
+
+- subtle, formal, executive, or mixed audience: about one meme per 12–18 content slides
+- conversational internal training or workshop: about one meme per 8–12 content slides
+- internet-native audience with demonstrated shared references: about one meme per 5–8 content slides
+
+These ranges are ceilings for review, not quotas or instructions to create placements. Select high-value narrative beats first, then use the range to detect a deck that is unusually sparse or crowded. Zero memes remains valid, and a long deck may exceed three when every placement passes the hard gates.
+
+Count substantive content slides rather than title, agenda, section-divider, or meme-only slides. Section dividers, live demonstrations, exercises, and strong visual changes already reset attention and can lower the number of memes needed.
+
+Normally leave at least five non-meme content slides between distinct meme beats. Use a shorter gap only when a justified callback or transition works better and the adjacent slides remain clear. Never add a weak candidate to satisfy a ratio.
+
 Good moments:
 
 - immediately after a difficult truth, not before the evidence
