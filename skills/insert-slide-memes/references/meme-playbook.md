@@ -9,11 +9,14 @@ Score a candidate from 0–2 on each dimension:
 | Narrative value | decoration only | mild emphasis | clarifies a feeling, analogy, or transition |
 | Template semantics | format conflicts with message | workable adaptation | template's established meaning matches exactly |
 | Audience recognition | obscure or niche | many may know it | immediately recognizable to this audience |
+| Novelty and fatigue | stale default or likely eye-roll | familiar but still usable | fresh to this audience without becoming obscure |
 | Caption clarity | needs explanation | caption carries it | lands at a glance |
 | Layout fit | displaces content | requires rearrangement | fits without weakening hierarchy |
 | Safety and rights | material concern | manageable with warning | appropriate and reuse status is clear |
 
-Insert only candidates scoring at least 10/12 with no unresolved safety concern.
+Apply an additional `-1` ubiquity penalty when a template repeatedly appears as a generic answer across unrelated presentation topics. Common examples include `Confused Math Lady`, `Drake Hotline Bling`, and `This Is Fine`; treat these as illustrative, not as a permanent blacklist. Keep the penalty even when the template remains the best semantic fit.
+
+Insert only candidates with an adjusted score of at least 12/14 and no unresolved safety concern. Record both the seven-dimension score and any ubiquity penalty.
 
 ## Cross-language search
 
@@ -24,10 +27,16 @@ Treat language as a search dimension, not a selection rule.
    - the deck language
    - English and globally common meme terminology
    - relevant regional or professional-community vocabulary when the audience is likely to know it
-3. Collect 5–8 plausible templates from more than one language or meme ecosystem.
-4. Eliminate candidates that depend on a niche community, untranslated wordplay, or cultural knowledge the audience probably lacks.
-5. Score the survivors with the table above.
-6. Break ties by audience recognition, semantic precision, caption brevity, rights clarity, and asset quality—in that order.
+3. Build a sourced candidate slate with at least:
+   - 2 globally common templates
+   - 2 regional or language-specific templates
+   - 2 workplace, professional, or relevant community templates
+4. Record a concrete template name and source or search evidence for every candidate. Do not count an unnamed category such as “Korean reaction image” as a candidate.
+5. If one ecosystem has no credible candidate for the audience and communicative job, record why and replace it with candidates from another distinct ecosystem. Do not pad the slate with weak or invented entries.
+6. Do not add an original, generated, or directly produced meme to the candidate slate unless the user explicitly requests one.
+7. Eliminate candidates that depend on a niche community, untranslated wordplay, or cultural knowledge the audience probably lacks.
+8. Score the survivors with the table above and apply the ubiquity penalty.
+9. Break ties by semantic precision, audience recognition, novelty/fatigue, caption brevity, rights clarity, and asset quality—in that order.
 
 Do not prefer a Korean meme for Korean slides or an English meme for English slides merely because the languages match. A globally known template with a localized caption can outperform a same-language reference, and a regional meme can win when the audience clearly recognizes it.
 
@@ -96,5 +105,6 @@ For every meme, ask:
 3. Is the joke aimed at a shared situation rather than a person or group?
 4. Would the presenter be comfortable if the slide were screenshotted without context?
 5. Is the source or generation status honest and recorded?
+6. Did a familiar default win because it was truly best after the novelty and ubiquity checks, rather than because it was the first recognizable result?
 
 Remove the meme if any answer is no.
