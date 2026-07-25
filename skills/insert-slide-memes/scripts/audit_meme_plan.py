@@ -7,6 +7,7 @@ import argparse
 import json
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 
 ALLOWED_STATUSES = {"provisional", "selected", "dropped"}
@@ -29,6 +30,11 @@ ALLOWED_RECOGNITION_BASES = {
     "audience-evidence",
     "broad-recognition",
     "user-approved",
+}
+ALLOWED_DISCOVERY_ROUTES = {
+    "imgflip-first",
+    "regional-first",
+    "fallback-other",
 }
 ALLOWED_IDENTITY_LEVELS = {"none", "low", "material"}
 ALLOWED_RIGHTS_STATUSES = {
@@ -142,6 +148,13 @@ def _is_nonempty_string(value: Any) -> bool:
 def _required_string(record: dict[str, Any], field: str, label: str, errors: list[str]) -> None:
     if not _is_nonempty_string(record.get(field)):
         errors.append(f"{label}: missing or empty {field}.")
+
+
+def _is_imgflip_url(value: Any) -> bool:
+    if not _is_nonempty_string(value):
+        return False
+    hostname = (urlparse(value).hostname or "").lower()
+    return hostname in {"imgflip.com", "www.imgflip.com"}
 
 
 def _audit_use_modes(
@@ -455,8 +468,8 @@ def audit_plan_data(
 
     if not isinstance(plan, dict):
         return ["Plan root must be a JSON object."], warnings, []
-    if plan.get("plan_version") != 1:
-        errors.append("Plan root: plan_version must be 1.")
+    if plan.get("plan_version") != 2:
+        errors.append("Plan root: plan_version must be 2.")
     if not _is_nonempty_string(plan.get("audience")):
         errors.append("Plan root: audience must be a non-empty string.")
     rights_mode = plan.get("rights_mode")
@@ -590,6 +603,26 @@ def audit_plan_data(
                     f"{sorted(ALLOWED_RECOGNITION_BASES)}; unsupported assumptions fail."
                 )
             _required_string(record, "recognition_evidence", label, errors)
+            discovery_route = record.get("discovery_route")
+            if discovery_route not in ALLOWED_DISCOVERY_ROUTES:
+                errors.append(
+                    f"{label}: discovery_route must be one of "
+                    f"{sorted(ALLOWED_DISCOVERY_ROUTES)}."
+                )
+            _required_string(record, "discovery_source", label, errors)
+            _required_string(record, "humor_evidence", label, errors)
+            if discovery_route == "imgflip-first":
+                if not _is_imgflip_url(record.get("discovery_source")):
+                    errors.append(
+                        f"{label}: imgflip-first discovery_source must use imgflip.com."
+                    )
+            elif discovery_route in {"regional-first", "fallback-other"}:
+                _required_string(
+                    record,
+                    "discovery_fallback_reason",
+                    label,
+                    errors,
+                )
             _required_string(record, "semantic_source", label, errors)
             _required_string(record, "original_source", label, errors)
             _required_string(record, "asset_source", label, errors)

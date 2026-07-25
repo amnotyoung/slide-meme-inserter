@@ -43,7 +43,7 @@ Represent each slide with this minimum structure. It may remain an internal work
     search_job: "같은 입력인데 결과가 달라 혼란스러운 상황"
     callback_to: null
     candidates:
-      - {template: "<candidate>", semantic_source: "<meaning-source-url>", ecosystem: global}
+      - {template: "<candidate>", discovery_route: imgflip-first, discovery_source: "<imgflip-page-url>", humor_evidence: "<why its active format lands>", semantic_source: "<meaning-source-url>", ecosystem: global}
 ```
 
 Use `meme: null` when a slide has no humor job. Allowed status values:
@@ -58,7 +58,7 @@ After selecting a candidate, store the executable plan as JSON:
 
 ```json
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "audience": "Intended audience",
   "rights_mode": "strict",
   "placements": [
@@ -102,6 +102,10 @@ After selecting a candidate, store the executable plan as JSON:
       "score_total": 13,
       "ubiquity_penalty": 0,
       "adjusted_score": 13,
+      "discovery_route": "imgflip-first",
+      "discovery_source": "https://imgflip.com/meme/Two-Buttons",
+      "discovery_fallback_reason": null,
+      "humor_evidence": "Current variants preserve a compact either-or dilemma that can be localized to the slide.",
       "semantic_source": "https://example.com/meaning",
       "original_source": "https://example.com/original",
       "asset_source": "https://example.com/image.jpg",
@@ -177,11 +181,12 @@ Keep the humor job provisional while planning the outline. Commit to an exact te
 3. the audience recognition basis is recorded and is not an unsupported assumption;
 4. all seven score dimensions are recorded and satisfy the threshold;
 5. semantic, original, asset, attribution, and rights fields remain distinct;
-6. the strict legal basis or practical review covers the selected rights mode and additional rights are reviewed;
-7. any material presenter-identity signal has explicit user approval;
-8. a callback points to an earlier setup;
-9. the layout can survive the target and smaller viewport; and
-10. `audit_meme_plan.py --strict` passes.
+6. discovery route, direct discovery page, and concrete humor evidence are recorded, with a fallback reason for a non-Imgflip-first route;
+7. the strict legal basis or practical review covers the selected rights mode and additional rights are reviewed;
+8. any material presenter-identity signal has explicit user approval;
+9. a callback points to an earlier setup;
+10. the layout can survive the target and smaller viewport; and
+11. `audit_meme_plan.py --strict` passes.
 
 Drop the meme instead of forcing a weak candidate.
 

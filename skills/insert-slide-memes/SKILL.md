@@ -41,12 +41,12 @@ choice and record it as root-level `rights_mode` in the JSON plan.
 3. Read [references/rights-clearance.md](references/rights-clearance.md). Do not download, copy, embed, or insert an asset until it has either the strict legal basis or the practical review required by the selected rights mode.
 4. Read [references/user-provided-memes.md](references/user-provided-memes.md) when the user supplies any asset, URL, template name, caption, or placement instruction.
 5. Define the communicative job before searching for an image.
-6. For every unresolved placement, explore sourced candidates from globally common, regional or language-specific, and relevant professional or community meme ecosystems. Treat this as search coverage, not a quota; never pad a slate or select a weaker candidate to represent an ecosystem.
+6. For every unresolved placement, start globally established meme discovery with Imgflip's template and active-caption ecosystem. Use it to compare comic execution, variation, and fatigue; use Know Your Meme or another maintained contextual source afterward to verify established meaning and origin. When the target culture is poorly represented on Imgflip, use a regional source first and record why. Explore globally common, regional or language-specific, and relevant professional or community meme ecosystems as coverage, not a quota.
 7. Apply every hard gate in the playbook before scoring or sourcing an asset. A caption cannot turn promotional art, wallpaper, stock imagery, fandom art, or an unrelated illustration into a meme.
-8. Prefer an established, recognizable template whose familiar meaning performs part of the joke. Do not generate an original meme unless the user explicitly asks.
-9. Record the rights mode, complete per-dimension score, recognition basis, identity signal, source roles, legal basis or practical review, use modes, additional-rights checks, attribution location, and gate results in a machine-readable JSON plan. Run `python3 <skill-root>/scripts/audit_meme_plan.py path/to/meme-plan.json --strict` before downloading or inserting any asset.
+8. Prefer an established, recognizable template whose familiar meaning performs part of the joke. Write a new slide-specific caption for that template. Do not generate a new visual meme format or AI-original illustration unless the user explicitly asks.
+9. Record the rights mode, discovery route and page, humor evidence, complete per-dimension score, recognition basis, identity signal, source roles, legal basis or practical review, use modes, additional-rights checks, attribution location, and gate results in a machine-readable JSON plan. Run `python3 <skill-root>/scripts/audit_meme_plan.py path/to/meme-plan.json --strict` before downloading or inserting any asset.
 10. Localize the caption while preserving the template's familiar meaning.
-11. Verify semantic history, original provenance, asset location, legal evidence, and attribution as separate facts. For Korean candidates, follow the Korean source hierarchy and static-image workflow in the playbook. Download only a candidate that already passed selection; never hotlink third-party images or capture frames from video.
+11. Keep active-humor discovery, semantic history, original provenance, asset location, legal evidence, and attribution as separate facts. An Imgflip discovery page is not semantic or legal evidence, and a Know Your Meme history page is not the asset source. For Korean candidates, follow the Korean source hierarchy and static-image workflow in the playbook. Download only a candidate that already passed selection; never hotlink third-party images or capture frames from video.
 12. Use the adaptive density rules in the playbook instead of a fixed deck-wide count. Treat the audience-specific range as a soft ceiling, not a quota; zero memes is valid, and long decks may exceed three when enough high-value placements pass every gate. Normally leave at least five non-meme content slides between distinct meme beats, account for section dividers and live demonstrations that already reset attention, and use at most one meme per slide. Honor an explicit user count while warning if it materially weakens the deck.
 13. Reject a searched candidate that decorates, repeats the slide, needs explanation, depends on an unverified subculture, implies an unsupported presenter identity, or weakens the presenter's credibility. Keep any asset with unresolved rights `provisional`, including a user-supplied asset, until it passes the review required by the selected rights mode.
 
@@ -97,6 +97,8 @@ For each proposed placement record:
 - identity signal level, domain, and explicit user approval when material
 - every hard-gate result from the playbook
 - all seven score dimensions, total, ubiquity penalty, and adjusted score
+- discovery route: `imgflip-first`, `regional-first`, or `fallback-other`
+- direct discovery page, concrete humor evidence, and a fallback reason when the route is not `imgflip-first`
 - candidates considered across cultures and why the winner is most recognizable
 - caption or setup, preferably under 12 words
 - separate semantic, original, asset, legal-evidence, and HTML attribution sources
@@ -173,6 +175,7 @@ Adapt values to the deck. Do not introduce global `img`, `figure`, or typography
 - Treat gaming, sports-team, entertainment-franchise, political, religious, and other fandom imagery as a material presenter-identity signal. Do not use it for a searched candidate without concrete audience evidence and explicit user approval.
 - Reject promotional art, wallpapers, press images, stock images, and unrelated illustrations as searched memes even when their slogan or subject creates a topical word association.
 - Do not treat popularity, search availability, user provision, source attribution, or an internal audience as permission.
+- Use public Imgflip examples to understand format rhythm and current variation; do not copy another user's distinctive caption verbatim as the deck's punchline.
 - Do not select or copy an asset with `rights_status: unclear` or `user-provided-unverified`. In strict mode, use a cleared alternative or document a statutory-exception analysis. In practical mode, complete the practical review and change the status to `practical-reviewed`.
 - Recheck scope when the deck gains a client audience, fee, file share, export, recording, or online publication; each of these requires strict mode.
 - Never invent an image source, license, quotation, or attribution.

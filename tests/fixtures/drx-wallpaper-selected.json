@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "audience": "KOICA overseas-office staff",
   "rights_mode": "strict",
   "placements": [
@@ -43,6 +43,10 @@
       "score_total": 13,
       "ubiquity_penalty": 0,
       "adjusted_score": 13,
+      "discovery_route": "regional-first",
+      "discovery_source": "https://www.ajunews.com/view/20221208132140683",
+      "discovery_fallback_reason": "The Korean phrase format is poorly represented on Imgflip.",
+      "humor_evidence": "The phrase has active Korean workplace adaptations, but this wallpaper is not a valid meme asset.",
       "semantic_source": "https://www.ajunews.com/view/20221208132140683",
       "original_source": "https://www.leagueoflegends.com/ko-kr/news/announcements/drx-wallpapers/",
       "asset_source": "https://cmsassets.rgpub.io/example/drx-wallpaper.jpg",

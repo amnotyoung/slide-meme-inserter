@@ -17,7 +17,7 @@ from audit_memes import audit  # noqa: E402
 
 def valid_plan() -> dict:
     return {
-        "plan_version": 1,
+        "plan_version": 2,
         "audience": "Mixed internal training audience",
         "rights_mode": "strict",
         "placements": [
@@ -61,6 +61,13 @@ def valid_plan() -> dict:
                 "score_total": 13,
                 "ubiquity_penalty": 0,
                 "adjusted_score": 13,
+                "discovery_route": "imgflip-first",
+                "discovery_source": "https://imgflip.com/meme/Two-Buttons",
+                "discovery_fallback_reason": None,
+                "humor_evidence": (
+                    "Active variants use a compact dilemma structure suitable for "
+                    "a slide-specific caption."
+                ),
                 "semantic_source": "https://example.com/licensed-template-meaning",
                 "original_source": "https://example.com/original",
                 "asset_source": "https://example.com/licensed-template.jpg",
@@ -116,7 +123,7 @@ class MemePlanAuditTests(unittest.TestCase):
     def test_zero_memes_is_valid(self) -> None:
         errors, warnings, selected = audit_plan_data(
             {
-                "plan_version": 1,
+                "plan_version": 2,
                 "audience": "Executive briefing",
                 "rights_mode": "strict",
                 "placements": [],
@@ -125,6 +132,53 @@ class MemePlanAuditTests(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertEqual(warnings, [])
         self.assertEqual(selected, [])
+
+    def test_searched_plan_requires_discovery_and_humor_evidence(self) -> None:
+        plan = valid_plan()
+        placement = plan["placements"][0]
+        placement.pop("discovery_route")
+        placement.pop("discovery_source")
+        placement.pop("humor_evidence")
+        errors, _, _ = audit_plan_data(plan)
+        joined = "\n".join(errors)
+        self.assertIn("discovery_route", joined)
+        self.assertIn("discovery_source", joined)
+        self.assertIn("humor_evidence", joined)
+
+    def test_imgflip_first_route_requires_imgflip_page(self) -> None:
+        plan = valid_plan()
+        plan["placements"][0]["discovery_source"] = (
+            "https://knowyourmeme.com/memes/daily-struggle-two-buttons"
+        )
+        errors, _, _ = audit_plan_data(plan)
+        self.assertTrue(
+            any(
+                "imgflip-first discovery_source must use imgflip.com" in error
+                for error in errors
+            )
+        )
+
+    def test_regional_first_route_requires_fallback_reason(self) -> None:
+        plan = valid_plan()
+        placement = plan["placements"][0]
+        placement["discovery_route"] = "regional-first"
+        placement["discovery_source"] = "https://example.kr/meme"
+        placement["discovery_fallback_reason"] = None
+        errors, _, _ = audit_plan_data(plan)
+        self.assertTrue(any("discovery_fallback_reason" in error for error in errors))
+
+    def test_regional_first_route_with_reason_passes(self) -> None:
+        plan = valid_plan()
+        placement = plan["placements"][0]
+        placement["discovery_route"] = "regional-first"
+        placement["discovery_source"] = "https://example.kr/meme"
+        placement["discovery_fallback_reason"] = (
+            "This Korean phrase format is not meaningfully represented on Imgflip."
+        )
+        errors, warnings, selected = audit_plan_data(plan)
+        self.assertEqual(errors, [])
+        self.assertEqual(warnings, [])
+        self.assertEqual([record["id"] for record in selected], ["m01"])
 
     def test_callback_requires_earlier_setup(self) -> None:
         plan = valid_plan()
@@ -156,6 +210,10 @@ class MemePlanAuditTests(unittest.TestCase):
             "asset_kind",
             "recognition_basis",
             "recognition_evidence",
+            "discovery_route",
+            "discovery_source",
+            "discovery_fallback_reason",
+            "humor_evidence",
             "semantic_source",
             "original_source",
             "asset_source",
@@ -197,6 +255,10 @@ class MemePlanAuditTests(unittest.TestCase):
             "asset_kind",
             "recognition_basis",
             "recognition_evidence",
+            "discovery_route",
+            "discovery_source",
+            "discovery_fallback_reason",
+            "humor_evidence",
             "semantic_source",
             "original_source",
             "asset_source",
