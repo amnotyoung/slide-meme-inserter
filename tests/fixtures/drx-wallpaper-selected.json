@@ -1,6 +1,7 @@
 {
   "plan_version": 1,
   "audience": "KOICA overseas-office staff",
+  "rights_mode": "strict",
   "placements": [
     {
       "id": "m03",
@@ -46,8 +47,12 @@
       "original_source": "https://www.leagueoflegends.com/ko-kr/news/announcements/drx-wallpapers/",
       "asset_source": "https://cmsassets.rgpub.io/example/drx-wallpaper.jpg",
       "source": "https://www.leagueoflegends.com/ko-kr/news/announcements/drx-wallpapers/",
+      "attribution_text": "Riot Games — DRX Wallpapers",
+      "attribution_url": "https://www.leagueoflegends.com/ko-kr/news/announcements/drx-wallpapers/",
+      "attribution_location": "on-slide",
       "rights_status": "unclear",
       "distribution": "internal",
+      "use_modes": ["live-internal"],
       "layout": "Use the 16:9 wallpaper as a large background",
       "risk": "Non-gamers may read this as the presenter's gaming preference"
     }
