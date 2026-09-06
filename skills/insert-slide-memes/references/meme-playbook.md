@@ -28,7 +28,10 @@ Score a candidate from 0–2 on each dimension:
 | Novelty and fatigue | stale default or likely eye-roll | familiar but still usable | fresh to this audience without becoming obscure |
 | Caption clarity | needs explanation | caption carries it | lands at a glance |
 | Layout fit | displaces content | requires rearrangement | fits without weakening hierarchy |
-| Safety and rights | unresolved or unreviewed | reviewed exception or practical review with bounded risk | documented clearance and complete rights checks |
+| Safety and rights | concrete unresolved safety or reuse issue | bounded concern after review; practical-reviewed assets | no concrete concern under common-use, or documented clearance when claimed |
+
+In common-use, an unverified license alone does not lower `safety_rights`. A score
+of 2 describes suitability under this working mode; it does not claim clearance.
 
 Apply an additional `-1` ubiquity penalty when a template repeatedly appears as a generic answer across unrelated presentation topics. Common examples include `Confused Math Lady`, `Drake Hotline Bling`, and `This Is Fine`; treat these as illustrative, not as a permanent blacklist. Keep the penalty even when the template remains the best semantic fit.
 
@@ -45,7 +48,8 @@ Separate the source roles instead of asking one site to perform every job:
 | Candidate discovery and comic execution | Imgflip template pages and current caption variants | Active formats, variation, caption rhythm, and fatigue signals |
 | Meaning and spread | Know Your Meme or another maintained contextual source | Established semantics, recurring use, and recognition history |
 | Original provenance | Creator- or publisher-controlled source | Creator, work, episode, post, and date |
-| Asset and legal evidence | Direct asset page, license, permission, terms, or statutory-exception record | The exact file and the legal basis for the planned use |
+| Asset source | Direct asset page, template host, or actual repost | The exact file used; ownership may remain unknown in common-use |
+| Legal evidence, when required | License, permission, terms, or statutory-exception record | The documented basis for strict review or a claim of clearance |
 
 Use this discovery sequence:
 
@@ -92,12 +96,12 @@ Use these levels in order. Keep semantic history, original provenance, asset loc
    - Find the earliest credible creator-controlled or publisher-controlled page: the creator's official video or post, broadcaster VOD, original webtoon episode, interview, or publication.
    - Record creator or publisher, work or episode, URL, date when available, and timestamp for video.
    - Do not label a later campaign, wallpaper, merchandise page, press image, or promotional derivative as the original merely because the publisher is official.
-   - If the original cannot be traced, keep the candidate `provisional` and do not count it as a sourced regional candidate.
+   - In common-use, trace the original when readily available; use `null` or omit `original_source` when unknown. A source for recurring use and the actual asset is sufficient. Do not turn original-source tracing into a blocker for familiar memes.
 4. **Determine asset reuse**
-   - Check the original page's license, terms, permission, or downloadable press assets separately from provenance.
-   - Treat TV, film, webtoon, creator-video, and celebrity stills as `rights unclear` unless reuse permission is explicit. Finding the original does not grant permission.
+   - In default common-use, a widely circulating TV, film, webtoon, creator-video, or celebrity meme may be selected with `rights_status: common-use-unverified`. Its source genre alone does not trigger a license investigation.
+   - Check license or permission details when strict/practical is requested or a concrete restriction has been identified. Finding the original does not itself grant permission.
    - In strict mode, keep unresolved rights `provisional` even for internal training. Internal use is not permission.
-   - In practical mode, select only for one-off live internal use after the compact risk review; any sharing, recording, export, client, paid, or public use requires strict mode.
+   - In explicitly requested practical mode, select only for one-off live internal use after the compact review. Broader uses can use common-use, or strict if clearance is requested.
    - Select only an asset that passes the rights contract for the chosen mode.
 
 ### Korean static-image workflow
@@ -107,12 +111,12 @@ Use this order only after a Korean candidate passes the hard gates:
 1. Run image search with the exact phrase, candidate name, and Korean terms such as `짤`, `이미지`, `PNG`, or `JPG`.
 2. Open the strongest contextual result and locate the actual static image URL rather than downloading the search thumbnail.
 3. Confirm that the asset is the recognizable meme artifact or a faithful template instance. Reject wallpapers, promotional art, and unrelated images that merely share a slogan or topic.
-4. Apply the selected mode in [rights-clearance.md](rights-clearance.md). In strict mode verify a license, permission, public-domain basis, or statutory exception. In practical mode complete the compact review and keep the candidate provisional until it passes.
-5. Record the semantic source, original source, contextual page, direct asset URL, mode-appropriate review, and attribution separately.
+4. Apply [rights-clearance.md](rights-clearance.md). Default common-use needs the established meme and source record, without license proof. Strict and practical require their respective reviews.
+5. Record the semantic source, original source when known, contextual page, direct asset URL, rights status, and attribution separately.
 6. Audit the selected plan, then download the JPG, PNG, WebP, or GIF locally. Verify its file type and dimensions and visually inspect that the expression and baked-in text match the intended meaning.
-7. Do not play or seek through a video to capture a frame. If no eligible static image is available under the selected rights mode, ask for evidence or choose another candidate.
+7. Do not play or seek through a video to capture a frame. If no usable static image is available, use a supplied file or another candidate. Do not ask for license evidence in routine common-use.
 
-Prefer a user-provided local image when the user already has the desired Korean meme, but do not copy or embed it until it passes the selected rights mode. Preserve the input in place and keep the placement provisional while rights are unreviewed.
+Prefer a user-provided local image when the user already has the desired Korean meme. Preserve the input in place. A recognized circulating meme can be selected and copied in common-use with its license still unverified.
 
 Record the result as:
 
@@ -123,18 +127,14 @@ discovery_fallback_reason: "<why Imgflip is a poor discovery pool for this candi
 humor_evidence: "<why the active format supports a concise joke for this slide>"
 semantic_sources:
   - "<meaning or spread source>"
-original_source:
-  publisher: "<creator or publisher>"
-  work: "<post, article, video, episode, or other original work>"
-  url: "<original URL>"
+original_source: "<original URL when known; null or omitted in common-use when unknown>"
 asset_url: "<direct JPG, PNG, WebP, or GIF URL>"
-rights_status: "<cleared, exception-reviewed, practical-reviewed, unclear, or user-provided-unverified>"
-legal_basis_or_practical_review: "<mode-appropriate record from rights-clearance.md>"
-use_modes: ["<every planned use>"]
+rights_status: "<common-use-unverified, cleared, exception-reviewed, practical-reviewed, unclear, or user-provided-unverified>"
+use_modes: ["<known planned uses; omit with distribution when unknown in common-use>"]
 distribution: "<internal, external-limited, or public>"
 ```
 
-Do not use ZzalBot or a similar aggregation page as a rights authority. Its presence can support discovery only when it leads to a concrete candidate that passes the remaining levels.
+ZzalBot and similar aggregators can provide discovery and an actual asset source in common-use. Record them as repost/template sources, not as rights authorities.
 
 ## Useful roles
 
@@ -191,12 +191,12 @@ Add or localize the caption in HTML when practical rather than baking text into 
 
 For external assets:
 
-1. Verify the source page and reuse terms.
-2. Apply the selected rights mode. Document a strict legal basis, or complete the practical review only for one-off live internal use.
+1. Open the source page and verify the actual meme asset.
+2. Use common-use by default; record recurring meme use and `common-use-unverified`. Review legal or practical evidence only when that mode is requested or a concrete asset-use issue arises.
 3. Audit the plan before downloading a suitable local copy.
-4. Record the source URL, mode-appropriate evidence, and attribution location.
+4. Record the source URL, rights status, and attribution location.
 5. Do not treat search-result availability, source credit, user provision, or internal use as permission.
-6. Treat Imgflip as discovery and generation infrastructure unless separate evidence establishes a broader legal basis.
+6. Imgflip may also supply the template asset and its attribution page in common-use. Do not describe that hosting as a legal license.
 
 ## Layout patterns
 
@@ -219,7 +219,7 @@ For every meme, ask:
 6. Did a familiar default win because it was truly best after the novelty and ubiquity checks, rather than because it was the first recognizable result?
 7. Does the asset read as the intended meme rather than the presenter's fandom, endorsement, or hobby?
 8. Did the candidate pass every hard gate before asset availability or source convenience influenced the choice?
-9. Does the documented strict basis or practical review cover the exact planned use, and does any broader use force strict mode?
-10. Are attribution and any moral-rights, portrait/publicity, and trademark issues resolved?
+9. Does the record match the selected mode: ordinary circulating meme in common-use, or the requested strict/practical review?
+10. Is attribution honest, and have any concrete rights-holder objection, restriction, or misleading endorsement issues been addressed?
 
 Remove the meme if any answer is no.

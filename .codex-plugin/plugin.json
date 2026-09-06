@@ -19,8 +19,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Slide Meme Inserter",
-    "shortDescription": "Plan or add rights-reviewed memes to HTML slide decks.",
-    "longDescription": "Create meme-aware HTML presentations or add restrained memes using strict clearance or a limited practical review for one-off internal live talks.",
+    "shortDescription": "Plan or add familiar internet memes to HTML slide decks.",
+    "longDescription": "Create meme-aware HTML presentations or add recognizable internet memes with common-use defaults, honest source records, and strict rights clearance on request.",
     "developerName": "amnotyoung",
     "category": "Productivity",
     "capabilities": [
@@ -31,7 +31,7 @@
     "defaultPrompt": [
       "Add context-fitting, recognizable memes to this HTML slide deck.",
       "Plan a new HTML presentation with restrained meme moments.",
-      "Insert my supplied meme using strict or practical rights review."
+      "Insert my supplied meme using common-use defaults."
     ]
   }
 }

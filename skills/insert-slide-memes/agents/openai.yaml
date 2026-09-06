@@ -1,4 +1,4 @@
 interface:
   display_name: "Slide Meme Inserter"
-  short_description: "Plan or place rights-reviewed memes in HTML decks"
-  default_prompt: "Use $insert-slide-memes to find active Imgflip variants first, verify their meaning, choose strict or practical rights mode, and add the best recognizable meme to my HTML deck."
+  short_description: "Add familiar internet memes with common-use defaults"
+  default_prompt: "Use $insert-slide-memes to find active Imgflip variants, verify their meaning, and add recognizable internet memes to my HTML deck using common-use defaults and honest source records."

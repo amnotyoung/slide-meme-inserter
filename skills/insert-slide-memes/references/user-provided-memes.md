@@ -13,7 +13,7 @@ Accept one or more of:
 - target slide, section, or narrative moment
 - layout preference
 
-Do not require every field. Infer non-material omissions from the deck and ask only when an assumption could change the joke, target, rights posture, or presentation structure.
+Do not require every field. Infer non-material omissions from the deck and ask only when an assumption could change the joke, target, or presentation structure. A missing license or unknown delivery context alone does not require a question in common-use.
 
 ## Precedence
 
@@ -37,16 +37,16 @@ A user-provided exact asset may bypass the searched-candidate established-format
 
 1. Inspect the image before editing the deck.
 2. Preserve the original file.
-3. Complete the strict legal basis or practical review required by the selected rights mode before copying or embedding it.
+3. For a recognized circulating meme, use common-use and record its source and `common-use-unverified` status. No license evidence or separate rights approval is needed before copying or embedding. Complete a strict/practical review only when that mode is requested.
 4. Do not crop, recolor, remove text, or otherwise edit the raster unless requested.
 5. Set `data-meme-origin="user-provided"`.
 6. Set `data-meme-source` to the attribution URL and render the same source at the planned attribution location.
-7. Keep the placement provisional until it passes the selected rights mode.
+7. Missing license evidence alone does not keep a common-use meme provisional.
 
 ### URL
 
 1. Distinguish a source page from a direct image URL.
-2. Verify the mode-appropriate review and intended-use scope; do not infer permission from accessibility.
+2. Verify that it is the intended meme; common-use needs no legal-review form. Do not label accessibility as permission.
 3. Audit the selected plan, then download the asset locally; never hotlink it.
 4. Preserve the attribution URL in `data-meme-source` and the planned attribution.
 
@@ -100,7 +100,15 @@ layout: "Requested or inferred layout"
 risk: "Concrete audience, identity, rights, or layout risk"
 ```
 
-Use `status: selected` only after adding every field required by [rights-clearance.md](rights-clearance.md) for the plan's rights mode and passing `audit_meme_plan.py --strict`. In practical mode, set `rights_status: practical-reviewed` only for one-off `live-internal` use. Keep unreviewed assets `provisional`.
+The example is an intake record. For a widely circulating supplied meme, set
+`hard_gates.established_format: true`, add a meme `asset_kind` and a short
+`recognition_evidence` note, and record the actual source/attribution fields. Then
+use `rights_status: common-use-unverified` and `status: selected` after the plan
+audit. The original creator and license may remain unknown. Known use modes are
+recorded with their distribution; omit both if unknown. Non-meme supplied assets
+can use documented clearance or the explicitly requested practical review instead
+of being mislabeled as circulating memes. See
+[rights-clearance.md](rights-clearance.md) for those optional modes.
 
 ## Delivery
 
@@ -109,5 +117,5 @@ Report:
 - which user-supplied fields were preserved
 - any inferred caption, placement, or layout
 - whether the asset was copied or embedded
-- source, rights mode, legal basis or practical review, intended use modes, and attribution
+- source, rights mode/status, known uses, and attribution; detailed legal review only when requested
 - any adaptation explicitly approved by the user

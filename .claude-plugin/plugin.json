@@ -1,6 +1,6 @@
 {
   "name": "slide-meme-inserter",
-  "description": "HTML 슬라이드의 기획 단계부터 밈을 설계하고 strict 또는 제한된 practical 권리 심사를 거쳐 절제해 삽입하는 Claude Code 플러그인입니다.",
+  "description": "HTML 슬라이드의 기획 단계부터 널리 쓰이는 인터넷 밈을 기본 활용하며, 요청 시 strict 권리 검토를 적용하는 Claude Code 플러그인입니다.",
   "version": "0.1.0",
   "author": {
     "name": "amnotyoung",

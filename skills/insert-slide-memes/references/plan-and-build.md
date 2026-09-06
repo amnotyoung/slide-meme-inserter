@@ -60,7 +60,7 @@ After selecting a candidate, store the executable plan as JSON:
 {
   "plan_version": 2,
   "audience": "Intended audience",
-  "rights_mode": "strict",
+  "rights_mode": "common-use",
   "placements": [
     {
       "id": "m01",
@@ -107,51 +107,30 @@ After selecting a candidate, store the executable plan as JSON:
       "discovery_fallback_reason": null,
       "humor_evidence": "Current variants preserve a compact either-or dilemma that can be localized to the slide.",
       "semantic_source": "https://example.com/meaning",
-      "original_source": "https://example.com/original",
+      "original_source": null,
       "asset_source": "https://example.com/image.jpg",
-      "attribution_text": "Example Creator — Licensed Template, CC BY 4.0",
-      "attribution_url": "https://example.com/license",
-      "attribution_location": "on-slide",
-      "source": "https://example.com/license",
-      "rights_status": "cleared",
-      "distribution": "internal",
-      "use_modes": ["live-internal"],
-      "legal_basis": {
-        "type": "license",
-        "jurisdiction": "KR",
-        "evidence": "https://example.com/license",
-        "checked_at": "2026-07-25",
-        "rights_holder": "Example Creator",
-        "scope": {
-          "use_modes": ["live-internal"],
-          "commercial_use": false,
-          "modification": true,
-          "territory": "worldwide",
-          "expiration": "none"
-        }
-      },
-      "additional_rights": {
-        "moral_rights": {
-          "status": "not-modified",
-          "note": "The raster is not altered."
-        },
-        "portrait_publicity": {
-          "status": "not-applicable",
-          "note": "No identifiable natural person appears."
-        },
-        "trademark": {
-          "status": "not-applicable",
-          "note": "No third-party mark appears."
-        }
-      },
+      "attribution_text": "Recognized Template — template source page",
+      "attribution_url": "https://example.com/template",
+      "attribution_location": "credits-slide",
+      "source": "https://example.com/template",
+      "rights_status": "common-use-unverified",
+      "distribution": "public",
+      "use_modes": ["public-pdf", "online-publication"],
       "layout": "Sidecar",
-      "risk": "Low"
+      "risk": "Ordinary meme use; license unverified, no concrete issue identified."
     }
   ]
 }
 ```
 
 Use these exact field names. A Markdown table may summarize the plan, but only the JSON plan is passed to `audit_meme_plan.py` and `audit_memes.py`.
+
+This is an illustrative schema, not a sourced asset selection. New plans should
+record `rights_mode: common-use`; omission also defaults to common-use in the
+auditor. Omit `use_modes` and `distribution` together when delivery is unknown.
+Unknown `original_source` may be `null` or omitted. No extra rights-review form is
+required. For opt-in strict/practical, use the fields in
+[rights-clearance.md](rights-clearance.md).
 
 ## Placement logic
 
@@ -182,7 +161,7 @@ Keep the humor job provisional while planning the outline. Commit to an exact te
 4. all seven score dimensions are recorded and satisfy the threshold;
 5. semantic, original, asset, attribution, and rights fields remain distinct;
 6. discovery route, direct discovery page, and concrete humor evidence are recorded, with a fallback reason for a non-Imgflip-first route;
-7. the strict legal basis or practical review covers the selected rights mode and additional rights are reviewed;
+7. common-use has an established meme, source, and honest unverified rights status, or the requested strict/practical review is complete;
 8. any material presenter-identity signal has explicit user approval;
 9. a callback points to an earlier setup;
 10. the layout can survive the target and smaller viewport; and

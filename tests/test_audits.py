@@ -113,7 +113,122 @@ def valid_plan() -> dict:
     }
 
 
+def common_use_plan() -> dict:
+    plan = valid_plan()
+    plan["rights_mode"] = "common-use"
+    placement = plan["placements"][0]
+    placement["template"] = "Two Buttons"
+    placement["rights_status"] = "common-use-unverified"
+    placement["attribution_text"] = "Two Buttons — Imgflip template page"
+    placement["attribution_url"] = placement["discovery_source"]
+    placement["source"] = placement["attribution_url"]
+    placement["risk"] = "License unverified; no concrete issue identified."
+    for field in ("original_source", "legal_basis", "additional_rights"):
+        placement.pop(field)
+    return plan
+
+
 class MemePlanAuditTests(unittest.TestCase):
+    def test_common_use_allows_every_delivery_mode_without_clearance(self) -> None:
+        uses = {
+            "live-internal": "internal",
+            "internal-file-share": "internal",
+            "live-client": "external-limited",
+            "external-file-share": "external-limited",
+            "paid-event": "external-limited",
+            "public-pdf": "public",
+            "public-recording": "public",
+            "online-publication": "public",
+        }
+        for use_mode, distribution in uses.items():
+            with self.subTest(use_mode=use_mode):
+                plan = common_use_plan()
+                placement = plan["placements"][0]
+                placement["use_modes"] = [use_mode]
+                placement["distribution"] = distribution
+                errors, warnings, selected = audit_plan_data(plan)
+                self.assertEqual(errors, [])
+                self.assertEqual(warnings, [])
+                self.assertEqual(len(selected), 1)
+
+    def test_omitted_mode_and_unknown_delivery_default_to_common_use(self) -> None:
+        plan = common_use_plan()
+        plan.pop("rights_mode")
+        placement = plan["placements"][0]
+        placement.pop("use_modes")
+        placement.pop("distribution")
+        placement["original_source"] = None
+        errors, warnings, selected = audit_plan_data(plan)
+        self.assertEqual(errors, [])
+        self.assertEqual(warnings, [])
+        self.assertEqual(len(selected), 1)
+        # The audit must not silently rewrite the caller's plan or rights status.
+        self.assertNotIn("rights_mode", plan)
+        self.assertEqual(selected[0]["rights_status"], "common-use-unverified")
+
+    def test_common_use_allows_supplied_circulating_meme(self) -> None:
+        plan = common_use_plan()
+        placement = plan["placements"][0]
+        placement["origin"] = "user-provided"
+        placement["user_locked"] = {"asset": True}
+        for field in ("discovery_route", "discovery_source", "semantic_source", "scores"):
+            placement.pop(field)
+        errors, warnings, selected = audit_plan_data(plan)
+        self.assertEqual(errors, [])
+        self.assertEqual(warnings, [])
+        self.assertEqual(len(selected), 1)
+
+    def test_common_use_does_not_turn_supplied_art_into_a_meme(self) -> None:
+        for field, value in (
+            ("established_format", False),
+            ("asset_kind", "wallpaper"),
+            ("recognition_evidence", ""),
+        ):
+            with self.subTest(field=field):
+                plan = common_use_plan()
+                placement = plan["placements"][0]
+                placement["origin"] = "user-provided"
+                placement["user_locked"] = {"asset": True}
+                if field == "established_format":
+                    placement["hard_gates"][field] = value
+                else:
+                    placement[field] = value
+                errors, _, _ = audit_plan_data(plan)
+                self.assertTrue(errors)
+
+    def test_common_use_does_not_ignore_a_failed_safety_gate(self) -> None:
+        plan = common_use_plan()
+        plan["placements"][0]["hard_gates"]["presenter_safe"] = False
+        errors, _, _ = audit_plan_data(plan)
+        self.assertTrue(any("hard gate presenter_safe" in error for error in errors))
+
+    def test_common_use_validates_known_delivery_scope(self) -> None:
+        for distribution in (None, "internal"):
+            with self.subTest(distribution=distribution):
+                plan = common_use_plan()
+                placement = plan["placements"][0]
+                placement["use_modes"] = ["public-pdf"]
+                if distribution is None:
+                    placement.pop("distribution")
+                errors, _, _ = audit_plan_data(plan)
+                self.assertTrue(any("distribution" in error for error in errors))
+
+    def test_common_use_status_cannot_bypass_an_explicit_review_mode(self) -> None:
+        for rights_mode in ("strict", "practical"):
+            with self.subTest(rights_mode=rights_mode):
+                plan = common_use_plan()
+                plan["rights_mode"] = rights_mode
+                errors, _, _ = audit_plan_data(plan)
+                self.assertTrue(any("allowed only in common-use mode" in e for e in errors))
+
+    def test_common_use_does_not_allow_an_unsupported_clearance_claim(self) -> None:
+        for status in ("cleared", "exception-reviewed"):
+            with self.subTest(status=status):
+                plan = common_use_plan()
+                plan["placements"][0]["rights_status"] = status
+                errors, _, _ = audit_plan_data(plan)
+                self.assertTrue(any("requires a legal_basis object" in e for e in errors))
+
     def test_valid_searched_plan_passes(self) -> None:
         errors, warnings, selected = audit_plan_data(valid_plan())
         self.assertEqual(errors, [])
@@ -357,7 +472,7 @@ class MemePlanAuditTests(unittest.TestCase):
         placement["legal_basis"]["scope"]["use_modes"] = ["live-client"]
 
         errors, _, _ = audit_plan_data(plan)
-        self.assertTrue(any("require strict mode" in error for error in errors))
+        self.assertTrue(any("need common-use or strict mode" in error for error in errors))
 
     def test_strict_external_file_share_is_external_limited(self) -> None:
         plan = valid_plan()
@@ -460,6 +575,41 @@ class MemePlanAuditTests(unittest.TestCase):
 
 
 class HtmlPlanCrossCheckTests(unittest.TestCase):
+    def test_common_use_public_deck_with_notes_passes_without_clearance(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            plan = common_use_plan()
+            plan.pop("rights_mode")
+            placement = plan["placements"][0]
+            placement["attribution_location"] = "speaker-notes"
+            placement["use_modes"] = ["live-client", "online-publication"]
+            placement["distribution"] = "public"
+            plan_path = directory / "meme-plan.json"
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+            (directory / "meme.jpg").write_bytes(b"test-image")
+            html_path = directory / "deck.html"
+            html_path.write_text(
+                f"""
+                <section id="s08">
+                  <figure class="slide-meme" data-meme-plan-id="m01"
+                    data-meme-role="reaction" data-meme-template="Two Buttons"
+                    data-meme-source="{placement['source']}" data-meme-origin="searched">
+                    <img src="meme.jpg" alt="A person hesitates between two buttons" />
+                    <figcaption>{placement['caption']}</figcaption>
+                  </figure>
+                  <aside class="speaker-notes">
+                    <a class="meme-attribution" data-meme-plan-id="m01"
+                      data-meme-attribution-location="speaker-notes"
+                      href="{placement['attribution_url']}">{placement['attribution_text']}</a>
+                  </aside>
+                </section>
+                """,
+                encoding="utf-8",
+            )
+            errors, warnings, _ = audit(html_path, 0.20, plan_path)
+            self.assertEqual(errors, [])
+            self.assertEqual(warnings, [])
+
     def test_html_matches_selected_plan(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)

@@ -8,7 +8,7 @@ Claude Code와 Codex가 동일한 `SKILL.md`를 사용합니다. 제품별 매�
 
 - 한국 밈 정적 이미지 출처 계층과 사용자 제공 이미지 대안을 추가했습니다.
 - 특정 유명 밈의 반복 선택을 줄이는 다양성 기준을 추가했습니다.
-- 외부·공유·녹화에는 `strict`, 일회성 사내 현장 발표에는 제한된 `practical` 권리 모드를 제공합니다.
+- 널리 유통되는 인터넷 밈은 `common-use`로 기본 활용합니다. 라이선스 증빙이나 건별 승인을 요구하지 않으며, `strict` 권리 검토는 요청할 때 적용합니다.
 - 실제 밈을 적용한 저해상도 전후 사례와 출처·이용 판단 기록을 복원했습니다.
 - 글로벌 밈 후보는 Imgflip에서 먼저 찾고, Know Your Meme는 의미·유래 검증에 사용하도록 출처 역할을 분리했습니다.
 
@@ -91,24 +91,17 @@ https://github.com/amnotyoung/slide-meme-inserter
 
 ### 권리 모드
 
-| 사용 상황 | `rights_mode` | 계획의 `use_modes` | `distribution` | 요구 사항 |
-|---|---|---|---|---|
-| 녹화·배포 없는 일회성 사내 현장 발표 | `practical` 또는 `strict` | `live-internal` | `internal` | practical 간이 위험심사 또는 strict 법적 근거 |
-| 사내 파일 공유 | `strict` | `internal-file-share` | `internal` | 해당 공유 범위를 포괄하는 법적 근거 |
-| 고객 대상 현장 발표 | `strict` | `live-client` | `external-limited` | 고객 발표 범위를 포괄하는 법적 근거 |
-| 제한된 외부 파일 전달 | `strict` | `external-file-share` | `external-limited` | 외부 전달 범위를 포괄하는 법적 근거 |
-| 유료 행사 | `strict` | `paid-event` | `external-limited` | 상업적 이용을 포함하는 법적 근거 |
-| 공개 PDF·녹화·온라인 게시 | `strict` | `public-pdf`, `public-recording`, `online-publication` | `public` | 해당 공개 범위를 포괄하는 법적 근거 |
+| 모드 | 적용 상황 | 필요한 기록 |
+|---|---|---|
+| `common-use` **기본값** | 일반적인 인터넷 밈 활용. 내부·고객·유료 발표, 파일 공유, PDF·녹화·공개 게시 포함 | 널리 쓰이는 밈이라는 근거, 실제 출처, `common-use-unverified` 상태 |
+| `strict` 선택 사항 | 사용자가 권리 정리된 이미지를 요청하거나 명시된 프로젝트 요건이 있을 때 | 라이선스·허락·퍼블릭도메인 또는 구체적인 법정 예외 검토 |
+| `practical` 기존 선택 사항 | 사용자가 일회성 사내 현장 발표용 간이 심사를 명시적으로 요청할 때 | 기존 간이 심사와 무녹화·무배포 확인 |
 
-한 덱을 여러 방식으로 사용할 예정이라면 해당하는 `use_modes`를 모두 기록하고, 가장 넓은 범위에 맞춰 `distribution`을 정합니다.
+**남들도 널리 쓰는 밈이면 기본적으로 활용합니다.** 원저작자나 라이선스를 찾지 못했다는 이유만으로 중단하거나, 밈마다 사용자 승인을 다시 받지 않습니다. 공개·고객·유료라는 이유만으로 `strict`으로 전환하지도 않습니다.
 
-`strict`은 기본값입니다. 사용 맥락이 불명확하거나 파일 공유·고객·유료·내보내기·녹화·공개 가능성이 있으면 `strict`을 사용합니다.
+이는 사용 방침이며 이용허락이나 분쟁 면제를 뜻하지 않습니다. 출처와 확인 상태를 정직하게 기록하고, 실제 권리자 이의 제기·명시적 이용 제한·허위 보증 암시 같은 구체적인 문제가 발견되면 해당 문제를 다룹니다.
 
-`practical`은 `distribution: internal`인 일회성 `live-internal` 발표에만 사용할 수 있습니다. 맥락적 변용, 필요한 분량과 해상도, 시장 대체성, 저작인격권·초상 위험, 출처 위치와 `no_recording_or_distribution: true`를 기록해야 합니다. 검색 후보의 `scores.safety_rights`는 완전한 권리 정리가 아니라 제한된 위험심사임을 나타내도록 `1`로 기록합니다.
-
-`practical`은 적법성을 보증하거나 법정 예외를 선언하는 모드가 아닙니다. 사용 범위가 넓어지면 기존 `practical-reviewed` 상태를 승계하지 않고 전체 계획을 `strict`으로 다시 심사합니다.
-
-향후 파일 전달이나 공개가 **현재 계획에 이미 포함되어 있다면** practical을 거치지 않고 처음부터 `strict`을 선택합니다. 예를 들어 사내 현장 발표 후 외부 참석자에게 PDF를 보낼 예정이라면 `use_modes`에 `live-internal`과 `external-file-share`를 모두 기록하고, 법적 근거의 범위도 두 사용을 모두 포괄해야 합니다. practical 발표가 끝난 뒤 예상하지 못했던 배포 요구가 새로 생긴 경우에만 그 시점에 strict 계획으로 전환하고 새 사용 범위를 추가합니다.
+알려진 사용 방식은 `use_modes`에 모두 기록하고 가장 넓은 범위에 맞춰 `distribution`을 정합니다. common-use에서 용도가 미정이면 두 필드를 함께 생략해도 됩니다. 용도를 확정하기 위한 질문 때문에 작업을 멈추지 않습니다. `practical`에서 사용 범위가 넓어지면 일반 밈은 `common-use`, 권리 확인을 요청받았다면 `strict`으로 전환하며 이전 간이 심사가 새 범위까지 포괄한다고 표시하지 않습니다.
 
 > 명령행의 `--strict` 옵션은 경고도 실패로 처리하는 **감사기 실행 옵션**입니다. 계획의 `rights_mode: "strict"`과는 별개입니다.
 
@@ -118,8 +111,6 @@ https://github.com/amnotyoung/slide-meme-inserter
 
 ```text
 Use $insert-slide-memes in postprocess mode.
-Use practical rights mode: this is a one-off internal live talk,
-with no recording, export, or file sharing.
 Add the supplied meme to slides.html.
 ```
 
@@ -127,11 +118,11 @@ Add the supplied meme to slides.html.
 
 ```text
 Use $insert-slide-memes in plan-and-build mode.
-Use strict rights mode because the final deck will be published as a PDF.
-Plan restrained meme beats and build the HTML deck.
+Use familiar internet memes with common-use defaults.
+Plan restrained meme beats and build the HTML deck and a public PDF.
 ```
 
-사용자가 직접 제공한 이미지·URL·템플릿명·캡션·희망 위치는 두 워크플로 모드에서 모두 우선 보존합니다. 비어 있는 항목만 문맥에 맞게 보완하며, 사용자 제공 자체를 이용허락으로 간주하지 않습니다.
+사용자가 직접 제공한 이미지·URL·템플릿명·캡션·희망 위치는 두 워크플로 모드에서 모두 우선 보존합니다. 비어 있는 항목만 문맥에 맞게 보완합니다. 권리 확인이 필요한 작업은 `Use strict rights mode; use only cleared assets.`처럼 별도로 지정합니다.
 
 ## 밈을 찾는 순서
 
@@ -139,38 +130,34 @@ Plan restrained meme beats and build the HTML deck.
 
 1. **Imgflip 우선 탐색:** 글로벌하게 알려진 형식은 Imgflip의 템플릿과 현재 캡션 변주를 먼저 살펴봅니다. 실제로 어떤 리듬과 대비가 웃기는지 비교하되 다른 사용자의 독창적인 캡션을 그대로 복사하지 않습니다.
 2. **의미 검증:** 후보를 좁힌 뒤 Know Your Meme 또는 유지되는 맥락 자료로 형식의 통상적 의미와 확산 이력을 확인합니다.
-3. **원출처 추적:** 창작자·배급사·원게시물에서 원작과 날짜를 별도로 확인합니다.
-4. **권리 검토:** Imgflip이나 Know Your Meme에 공개되어 있다는 사실과 무관하게, 선택한 사용 범위에 맞는 `strict` 법적 근거나 `practical` 검토를 기록합니다.
+3. **출처 기록:** 실제 이미지와 게시 페이지를 기록하고, 원출처는 확인 가능한 경우에 덧붙입니다. common-use에서는 원출처 미확인이 사용을 막지 않습니다.
+4. **사용 모드 적용:** 기본은 `common-use-unverified`로 활용합니다. 엄격한 검토를 요청받은 경우에만 법적 근거나 간이 심사 기록을 추가합니다.
 
 검색 후보의 JSON 계획에는 `discovery_route`, `discovery_source`, `humor_evidence`를 기록합니다. 기본값은 `imgflip-first`입니다. 한국 고유 밈처럼 Imgflip의 대표성이 낮으면 `regional-first`, 적합한 결과가 없으면 `fallback-other`를 사용하고 `discovery_fallback_reason`을 추가합니다.
 
 ## 계획의 권리 필드
 
-실행 가능한 JSON 계획은 루트에 `rights_mode`를 기록합니다. 아래는 practical 배치에서 권리 관련 필드만 발췌한 예시이며, 이것만으로는 전체 계획 감사를 통과하지 않습니다. 전체 배치 스키마는 [`plan-and-build.md`](skills/insert-slide-memes/references/plan-and-build.md)를 참고하세요.
+새 JSON 계획은 루트에 `rights_mode: common-use`를 기록합니다. 생략해도 감사기는 common-use로 처리하며, 기존의 명시적인 strict/practical 계획은 유지합니다. 아래는 관련 필드만 발췌한 예시입니다. 전체 배치 스키마는 [`plan-and-build.md`](skills/insert-slide-memes/references/plan-and-build.md)를 참고하세요.
 
 ```json
 {
   "plan_version": 2,
   "audience": "사내 교육 참석자",
-  "rights_mode": "practical",
+  "rights_mode": "common-use",
   "placements": [
     {
       "id": "m01",
       "status": "selected",
-      "rights_status": "practical-reviewed",
-      "distribution": "internal",
-      "use_modes": ["live-internal"],
-      "attribution_location": "speaker-notes",
-      "practical_review": {
-        "transformative_context": "팀의 업무 실패를 설명하는 반응 이미지로 사용",
-        "necessity": "해당 논점을 설명하는 한 장면에 한 번만 사용",
-        "amount_resolution": "저해상도 이미지 전체를 크롭 없이 사용",
-        "market_substitution": "원저작물 수요를 대체하지 않음",
-        "moral_personality_risk": "비하·왜곡·보증 암시 및 민감 인물 위험 없음",
-        "attribution_method": "speaker-notes",
-        "checked_at": "2026-07-25",
-        "no_recording_or_distribution": true
-      }
+      "rights_status": "common-use-unverified",
+      "asset_kind": "meme-template",
+      "recognition_evidence": "같은 양자택일 문법으로 반복되는 템플릿 변주 확인",
+      "original_source": null,
+      "distribution": "public",
+      "use_modes": ["public-pdf"],
+      "attribution_location": "credits-slide",
+      "attribution_text": "Two Buttons — Imgflip template page",
+      "attribution_url": "https://imgflip.com/meme/Two-Buttons",
+      "source": "https://imgflip.com/meme/Two-Buttons"
     }
   ]
 }
@@ -179,16 +166,19 @@ Plan restrained meme beats and build the HTML deck.
 권리 상태의 전환은 다음과 같습니다.
 
 - 미심사 사용자 이미지: `status: provisional`, `rights_status: user-provided-unverified`
+- 널리 유통되는 밈으로 확인: `status: selected`, `rights_status: common-use-unverified` — 라이선스는 미확인 상태여도 사용
 - practical 심사 통과: `status: selected`, `rights_status: practical-reviewed`
 - 라이선스·허락·퍼블릭도메인 확인: `status: selected`, `rights_status: cleared`
 - 법정 예외 검토 완료: `status: selected`, `rights_status: exception-reviewed`
 
-`unclear` 또는 `user-provided-unverified` 상태인 이미지는 어떤 권리 모드에서도 바로 `selected`로 사용할 수 없습니다.
+common-use에는 별도의 `legal_basis`, `practical_review`, `additional_rights` 양식이 필요하지 않습니다. 기존 밈 선택 기록을 사용하며, 미확인 라이선스만으로 경고나 점수 감점을 주지 않습니다. `cleared` 또는 `exception-reviewed`라고 표시하려면 모드와 무관하게 그 근거가 있어야 합니다.
 
 ## 출처 위치
 
 - `strict`: `on-slide` 또는 `credits-slide`
-- `practical`: `on-slide`, `credits-slide` 또는 `speaker-notes`
+- `common-use`와 `practical`: `on-slide`, `credits-slide` 또는 `speaker-notes`
+
+common-use에서는 실제 템플릿·재게시 페이지도 출처로 사용할 수 있습니다. 출처는 크레딧이나 발표자 노트에 모아도 되며, 노트가 빠지는 PDF에는 크레딧을 포함합니다. 재게시자를 원저작자로 표시하거나 확인하지 않은 라이선스를 붙이지 않습니다.
 
 `on-slide` 출처는 해당 `.slide-meme` figure 안에 둡니다. `credits-slide`는 `credits`, `credits-slide`, `references`, `sources` 중 하나의 클래스를 가진 슬라이드에 둡니다. `speaker-notes`는 `speaker-notes` 클래스 또는 `data-speaker-notes` 속성을 가진 요소에 둡니다. figure 밖의 출처 링크에는 `data-meme-plan-id`와 `data-meme-attribution-location`을 기록해야 하며, HTML 감사기가 실제 컨테이너와 계획을 대조합니다.
 
@@ -200,9 +190,10 @@ Plan restrained meme beats and build the HTML deck.
 - 검색 결과의 상당수가 커뮤니티 재게시물, 방송·유튜브 캡처 또는 출처가 잘린 이미지입니다.
 - 방송사 VOD나 제작자 영상을 찾았더라도 특정 화면을 재사용할 권리가 자동으로 생기지는 않습니다.
 - `strict`에서는 원출처 또는 법적 이용 근거를 확인하지 못한 후보가 `provisional` 상태에 머뭅니다.
+- 기본 `common-use`에서는 널리 유통되는 실제 짤과 출처를 확보하면 `common-use-unverified`로 활용합니다. 원저작자나 허락 증빙은 필수가 아닙니다.
 - `practical`에서는 일회성 사내 현장 발표에 한해 간이 위험심사를 통과한 후보를 `practical-reviewed`로 전환할 수 있습니다.
 
-`strict`에서 가장 확실한 대안은 **사용자가 권리 근거가 확인된 이미지 파일과 허락·라이선스 정보를 함께 제공하는 것**입니다. 예를 들어:
+원하는 짤이 있다면 사용자가 이미지 파일을 직접 제공해도 됩니다. common-use에서는 파일과 밈의 맥락을 확인해 활용합니다. 예를 들어:
 
 ```text
 my-deck/
@@ -233,7 +224,7 @@ Use $insert-slide-memes to add memes to slides.html.
 - 내부 교육용인지 공개 배포용인지
 - 알고 있는 라이선스 또는 사용 허가
 
-선택한 권리 모드의 심사를 통과하면 스킬은 제공된 원본 파일을 보존하고, 최종 덱의 `assets/memes/` 아래에 ASCII 파일명으로 복사하거나 단일 HTML 요청 시 Base64로 포함합니다. 아직 심사하지 않은 이미지는 `user-provided-unverified`와 `provisional`로 기록합니다.
+스킬은 제공된 원본 파일을 보존하고, 최종 덱의 `assets/memes/` 아래에 ASCII 파일명으로 복사하거나 단일 HTML 요청 시 Base64로 포함합니다. 널리 쓰이는 밈은 라이선스 미확인 상태로도 선택할 수 있으며, strict/practical을 요청한 경우에만 해당 심사를 먼저 수행합니다.
 
 ### 한국 밈은 정적 이미지로 가져옵니다
 
@@ -242,15 +233,17 @@ Use $insert-slide-memes to add memes to slides.html.
 1. 정확한 대사나 후보명에 `짤`, `이미지`, `PNG`, `JPG`를 붙여 이미지 검색합니다.
 2. 검색 썸네일이 아니라 해당 페이지에 포함된 실제 정적 이미지 URL을 찾습니다.
 3. 이미지가 실제 밈 템플릿인지 확인합니다. 문구만 연상되는 월페이퍼·홍보 이미지·팬덤 이미지는 탈락시킵니다.
-4. `strict`라면 라이선스·허락·퍼블릭도메인 또는 적용 법령상 예외 근거를 확인하고, `practical`이라면 제한된 사내 현장 사용 위험심사를 완료합니다.
-5. 현장 발표, 파일 공유, 고객 발표, 유료 행사, PDF 공개, 녹화, 온라인 게시 범위를 구분해 기록합니다.
+4. 기본 common-use로 활용하고 실제 출처와 `common-use-unverified` 상태를 기록합니다. strict/practical을 요청받은 경우 해당 검토를 수행합니다.
+5. 알려진 현장 발표·공유·공개 범위를 기록합니다. 미정인 용도를 억지로 추정하지 않습니다.
 6. 계획 감사를 통과한 뒤에만 JPG·PNG·WebP·GIF 파일을 내려받고 크기와 내용을 확인합니다.
-7. 의미 출처, 원출처, 이미지 URL, 모드별 심사, 출처 위치와 추가 권리 검토를 분리해 기록합니다.
-8. 선택한 권리 모드를 통과하지 못하면 영상 캡처나 사용자 제공 파일로 우회하지 않고 후보를 보류하거나 교체합니다.
+7. 의미 출처, 확인 가능한 원출처, 이미지 URL과 출처 위치를 분리해 기록합니다.
+8. 실제 이미지 확보나 문맥 적합성에 문제가 있으면 후보를 보류하거나 교체합니다. common-use에서는 라이선스 미확인만으로 중단하지 않습니다.
 
-사용자가 이미 원하는 짤을 알고 있다면 이미지와 함께 권리자·라이선스·허락 범위·출처 URL을 제공하는 방식이 가장 빠르고 정확합니다. 단순히 파일만 전달받았다는 이유로 선택 상태로 전환하지 않으며, `strict` 법적 근거나 `practical` 간이 위험심사가 별도로 필요합니다.
+사용자가 이미 원하는 짤을 알고 있다면 이미지와 원하는 위치·캡션을 제공하면 됩니다. 출처 URL은 알고 있는 경우 함께 받으며, 필요한 출처는 스킬이 보완합니다. common-use 작업에 별도 허락 증빙을 요구하지 않습니다.
 
-## 권리 확인
+## 선택적인 권리 확인
+
+기본 common-use는 널리 유통되는 밈을 사용하는 작업 방침입니다. 아래 양식은 엄격한 확인을 요청받았거나 실제로 권리 정리가 되었다고 표시할 때 사용합니다.
 
 `strict`의 `selected` 상태에는 다음 중 하나가 필요합니다.
 
@@ -273,9 +266,9 @@ Use $insert-slide-memes to add memes to slides.html.
 - 점수 합계 전에 필수 게이트를 적용하며, 적합한 후보가 없으면 밈을 넣지 않습니다.
 - 밈은 논리를 대신하지 않고 반응, 비유, 콜백, 전환을 돕습니다.
 - 전체 최대 개수는 고정하지 않습니다. 발표 톤과 콘텐츠 길이에 따른 밀도를 소프트 상한으로 사용하고, 밈 사이에는 보통 콘텐츠 슬라이드 5장 이상의 간격을 둡니다.
-- 이미지 출처만으로 허락을 추정하지 않으며 계획의 `strict` 또는 `practical` 심사를 요구합니다.
-- 현장 상영, 사내 공유, 고객 발표, 유료 행사, PDF, 녹화와 온라인 게시의 허락 범위를 각각 확인합니다.
-- 저작인격권, 초상·퍼블리시티와 상표 위험을 별도로 검토합니다.
+- 널리 쓰이는 밈은 common-use로 기본 활용하고 출처와 권리 미확인 상태를 기록합니다.
+- 외부 발표·공유·녹화·공개를 이유로 자동 차단하거나 strict 검토를 요구하지 않습니다.
+- 실제 이용 제한·권리자 이의 제기·허위 보증 암시가 발견되면 그 문제를 구체적으로 다룹니다.
 - 삽입 전 계획 감사, 삽입 후 HTML 대조와 실제 브라우저 렌더링을 모두 검증합니다.
 
 ## 구조

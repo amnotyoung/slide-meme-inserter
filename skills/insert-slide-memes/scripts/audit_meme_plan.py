@@ -38,14 +38,17 @@ ALLOWED_DISCOVERY_ROUTES = {
 }
 ALLOWED_IDENTITY_LEVELS = {"none", "low", "material"}
 ALLOWED_RIGHTS_STATUSES = {
+    "common-use-unverified",
     "cleared",
     "exception-reviewed",
     "practical-reviewed",
     "unclear",
     "user-provided-unverified",
 }
-ALLOWED_RIGHTS_MODES = {"strict", "practical"}
+DEFAULT_RIGHTS_MODE = "common-use"
+ALLOWED_RIGHTS_MODES = {DEFAULT_RIGHTS_MODE, "strict", "practical"}
 ALLOWED_ATTRIBUTION_LOCATIONS = {
+    "common-use": {"on-slide", "credits-slide", "speaker-notes"},
     "strict": {"on-slide", "credits-slide"},
     "practical": {"on-slide", "credits-slide", "speaker-notes"},
 }
@@ -333,8 +336,22 @@ def _audit_practical_scope(
         errors.append(
             f"{label}: practical mode is limited to live-internal use with internal "
             "distribution; file sharing, clients, paid events, exports, recordings, "
-            "and publication require strict mode."
+            "and publication need common-use or strict mode instead."
         )
+
+
+def _audit_common_use(
+    record: dict[str, Any],
+    label: str,
+    errors: list[str],
+) -> None:
+    # Reuse the selection evidence instead of requiring a separate legal review.
+    gates = record.get("hard_gates")
+    if not isinstance(gates, dict) or gates.get("established_format") is not True:
+        errors.append(f"{label}: common-use requires an established meme format.")
+    if record.get("asset_kind") not in ALLOWED_SEARCHED_ASSET_KINDS:
+        errors.append(f"{label}: common-use requires a meme asset_kind.")
+    _required_string(record, "recognition_evidence", label, errors)
 
 
 def _audit_practical_review(
@@ -472,7 +489,7 @@ def audit_plan_data(
         errors.append("Plan root: plan_version must be 2.")
     if not _is_nonempty_string(plan.get("audience")):
         errors.append("Plan root: audience must be a non-empty string.")
-    rights_mode = plan.get("rights_mode")
+    rights_mode = plan.get("rights_mode", DEFAULT_RIGHTS_MODE)
     if rights_mode not in ALLOWED_RIGHTS_MODES:
         errors.append(
             f"Plan root: rights_mode must be one of {sorted(ALLOWED_RIGHTS_MODES)}."
@@ -534,7 +551,7 @@ def audit_plan_data(
         ):
             errors.append(
                 f"{label}: source must equal attribution_url so HTML exposes the "
-                "actual attribution source, not a semantic or discovery page."
+                "recorded attribution source."
             )
 
         role = record.get("role")
@@ -548,10 +565,17 @@ def audit_plan_data(
             errors.append(f"{label}: invalid origin {origin!r}.")
             continue
 
-        use_modes = _audit_use_modes(record, label, errors)
+        rights_status = record.get("rights_status")
+        common_use = (
+            rights_mode == "common-use" and rights_status == "common-use-unverified"
+        )
+        # Unknown delivery context does not block routine common-use selection.
+        # When either field is supplied, validate the pair and its consistency.
+        use_modes = []
+        if not common_use or "use_modes" in record or "distribution" in record:
+            use_modes = _audit_use_modes(record, label, errors)
         if rights_mode == "practical":
             _audit_practical_scope(record, label, use_modes, errors)
-        rights_status = record.get("rights_status")
         if rights_status not in ALLOWED_RIGHTS_STATUSES:
             errors.append(
                 f"{label}: rights_status must be one of {sorted(ALLOWED_RIGHTS_STATUSES)}."
@@ -570,7 +594,14 @@ def audit_plan_data(
                 f"{sorted(allowed_locations)} in {rights_mode!r} mode."
             )
 
-        if rights_mode == "practical" and rights_status == "practical-reviewed":
+        if common_use:
+            _audit_common_use(record, label, errors)
+        elif rights_status == "common-use-unverified":
+            errors.append(
+                f"{label}: rights_status 'common-use-unverified' is allowed only in "
+                "common-use mode."
+            )
+        elif rights_mode == "practical" and rights_status == "practical-reviewed":
             _audit_practical_review(record, label, errors)
         elif rights_status in {"cleared", "exception-reviewed"}:
             _audit_legal_basis(record, label, use_modes, errors)
@@ -581,7 +612,8 @@ def audit_plan_data(
             )
         elif rights_mode == "strict":
             _audit_legal_basis(record, label, use_modes, errors)
-        _audit_additional_rights(record, label, errors)
+        if not common_use or "additional_rights" in record:
+            _audit_additional_rights(record, label, errors)
         _audit_identity(record, label, errors)
 
         if origin == "searched":
@@ -624,7 +656,8 @@ def audit_plan_data(
                     errors,
                 )
             _required_string(record, "semantic_source", label, errors)
-            _required_string(record, "original_source", label, errors)
+            if rights_mode != "common-use":
+                _required_string(record, "original_source", label, errors)
             _required_string(record, "asset_source", label, errors)
             _audit_hard_gates(record, label, HARD_GATES, errors)
             _audit_scores(record, label, errors)

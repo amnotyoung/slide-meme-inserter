@@ -1,6 +1,9 @@
-# Rights Clearance Contract
+# Meme Use and Optional Rights Clearance
 
-Use this contract before downloading, copying, embedding, or inserting any meme asset. Recording a source or limiting a deck to an internal audience does not itself authorize use.
+Use common-use by default for widely circulating internet memes. This is a working
+preference, not a claim of legal permission. Keep source records honest and read
+the detailed review sections only when strict or practical mode is requested, or
+when a concrete issue needs attention.
 
 ## Contents
 
@@ -17,16 +20,44 @@ Use this contract before downloading, copying, embedding, or inserting any meme 
 
 Choose one plan-level `rights_mode`.
 
+### `common-use` — default
+
+Proceed with recognizable internet memes without seeking a license, a legal
+opinion, or separate user approval for each image. This applies to internal and
+client presentations, paid talks, shared decks, exports, recordings, and public
+posting. Unknown delivery context does not trigger strict mode or a question.
+
+Use `rights_status: "common-use-unverified"`. Reuse existing selection fields:
+
+- `hard_gates.established_format: true` and a meme `asset_kind`
+- `recognition_evidence`: a short, concrete note about the template's recurring use
+- the actual source page, image location, and an honest attribution
+
+This applies equally to searched and user-provided memes. A template page or
+repost can be the asset/attribution source; it need not establish ownership.
+Record `original_source` when known and omit it or use `null` when unknown. Do not
+invent a creator or block a familiar meme solely because its original is untraced.
+No `legal_basis`, `practical_review`, or `additional_rights` form is required.
+Record known `use_modes` and the matching `distribution`; omit both when unknown.
+Missing license evidence alone does not generate an audit warning or score penalty.
+
+Reserve `cleared` and `exception-reviewed` for their documented bases, even in
+common-use mode. Popularity does not establish legal permission or immunity from
+claims. Do not promise that a rights holder will ignore a particular user.
+If an actual objection, an explicit reuse restriction, or misleading endorsement
+is identified, address that specific issue. Do not turn hypothetical concerns
+into a routine approval or legal-research workflow.
+
 ### `strict`
 
-Use strict mode whenever the deck may be shared as a file, presented to clients,
-used at a paid event, exported, recorded, or published. It is also the default when
-the delivery context is unknown. A selected placement must use one of the legal
-bases below.
+Use strict mode when the user requests cleared assets or a stated project
+requirement demands them. Do not infer that requirement from sharing, clients,
+payment, export, recording, or publication alone. A selected placement must use
+one of the legal bases below.
 
 ### `practical`
 
-Practical mode is a limited operational risk screen for a one-off internal live
+Practical mode is an optional legacy risk screen for a one-off internal live
 presentation. Every selected placement must use only `live-internal` with
 `distribution: internal`. File sharing, client or paid audiences, PDF or image
 export, recording, and online publication are forbidden.
@@ -50,10 +81,14 @@ For a scored searched candidate, set `scores.safety_rights` to `1`;
 `practical-reviewed` is bounded risk, not documented clearance.
 
 This mode does not supply a statutory exception, certify legality, or predict a
-court result. If any practical constraint changes, switch the plan to strict and
-clear every selected asset again.
+court result. If a practical constraint changes, update the plan using common-use
+for established memes, or strict when clearance is requested. Do not present the
+old practical review as covering the expanded use.
 
 ## Selection rule
+
+In common-use mode, an established meme may be `selected` with
+`rights_status: "common-use-unverified"` using the selection evidence above.
 
 In strict mode, a placement may be `selected` only when it has one documented
 legal basis:
@@ -67,13 +102,13 @@ legal basis:
 
 Use the statutory-exception labels only for a Korean-law analysis. Record another jurisdiction in `jurisdiction` and use a licensed or permitted asset when the applicable exception has not been reviewed.
 
-Use `rights_status: "cleared"` for a license, permission, or public-domain basis. Use `rights_status: "exception-reviewed"` for a reviewed statutory exception. In practical mode only, use `rights_status: "practical-reviewed"` after completing the compact review above. Keep `unclear` and `user-provided-unverified` placements `provisional` or `dropped`.
+Use `rights_status: "cleared"` for a license, permission, or public-domain basis. Use `rights_status: "exception-reviewed"` for a reviewed statutory exception. In practical mode only, use `rights_status: "practical-reviewed"` after completing the compact review above. `unclear` and `user-provided-unverified` are provisional intake states; an established meme can move to `common-use-unverified` without resolving its license.
 
 The audit verifies that evidence and analysis fields exist. It does not certify that a license is authentic or that a court would accept a statutory exception.
 
 ## Intended use modes
 
-Record every planned use:
+Record known planned uses (required in strict/practical mode):
 
 - `live-internal`
 - `internal-file-share`
@@ -90,7 +125,9 @@ Set `distribution` to:
 - `external-limited` when `live-client`, `external-file-share`, or `paid-event` is the broadest mode
 - `public` when a public PDF, recording, or online publication is planned
 
-Adding a use mode later requires a new scope check. A live-only permission does not authorize PDF distribution or recording.
+Adding a use mode does not automatically change common-use. When claiming a
+license, permission, or reviewed exception, check that it covers the new scope;
+a live-only permission does not authorize PDF distribution or recording.
 
 ## Clearance evidence
 
@@ -140,6 +177,9 @@ Do not use a statutory exception as a generic label for decoration, an icebreake
 
 ## Additional rights
 
+These structured checks are required for strict/practical records and claims of
+clearance. Common-use requires attention to concrete issues, not this form.
+
 Review and explain:
 
 - `moral_rights`: use `not-modified`, `permitted`, or `reviewed`
@@ -154,26 +194,50 @@ Keep discovery, semantic history, original provenance, asset location, legal evi
 
 Record:
 
-- `attribution_text`: creator, work, source, and license text appropriate to the use
-- `attribution_url`: the creator-controlled, publisher-controlled, or license-required source
+- `attribution_text`: template/work and actual source; creator and license only when known
+- `attribution_url`: in common-use, the actual template, source, or repost page; for strict/practical, the creator-controlled, publisher-controlled, or license-required source
 - `source`: the same value as `attribution_url` for HTML mapping
 
 Record `attribution_location`:
 
 - `on-slide` or `credits-slide` in strict mode
-- `on-slide`, `credits-slide`, or `speaker-notes` in practical mode
+- `on-slide`, `credits-slide`, or `speaker-notes` in common-use or practical mode
+
+Prefer credits or speaker notes for common-use when an on-slide source would
+distract from the joke. Include visible credits in a PDF if notes are not exported.
 
 Render `attribution_text` as a link with class `meme-attribution`. An on-slide link
 belongs inside the meme figure. A credits or speaker-notes link belongs outside the
 figure and must carry both `data-meme-plan-id` and
 `data-meme-attribution-location`. A hidden `data-meme-source` attribute,
-`user-provided`, `source: internet`, or an aggregator link is not sufficient.
+`user-provided`, or `source: internet` is not sufficient. An actual aggregator or
+template page is acceptable attribution in common-use, but is not legal evidence.
 
 Put a credits link in a slide classed as `credits`, `credits-slide`, `references`,
 or `sources`. Put a speaker-notes link in an element with class `speaker-notes` or
 the `data-speaker-notes` attribute. The HTML audit checks these containers.
 
 ## Examples
+
+### Common-use placement
+
+These are the use-related fields, not a complete placement. No rights-review
+object is needed; see `plan-and-build.md` for the full selection schema.
+
+```json
+{
+  "rights_status": "common-use-unverified",
+  "asset_kind": "meme-template",
+  "recognition_evidence": "The template page shows recurring variations of the same two-choice joke.",
+  "original_source": null,
+  "attribution_text": "Two Buttons — Imgflip template page",
+  "attribution_url": "https://imgflip.com/meme/Two-Buttons",
+  "source": "https://imgflip.com/meme/Two-Buttons",
+  "attribution_location": "credits-slide",
+  "distribution": "public",
+  "use_modes": ["public-pdf", "online-publication"]
+}
+```
 
 ### Strict placement
 
