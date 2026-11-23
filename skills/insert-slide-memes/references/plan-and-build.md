@@ -1,6 +1,6 @@
 # Plan-and-Build Contract
 
-Use this reference only when planning and generating a new meme-aware HTML deck.
+Use this reference when planning and generating a new meme-aware HTML deck, and for the canonical JSON plan schema used in both `plan-and-build` and `postprocess` modes.
 
 ## Contents
 
@@ -128,9 +128,11 @@ Use these exact field names. A Markdown table may summarize the plan, but only t
 This is an illustrative schema, not a sourced asset selection. New plans should
 record `rights_mode: common-use`; omission also defaults to common-use in the
 auditor. Omit `use_modes` and `distribution` together when delivery is unknown.
-Unknown `original_source` may be `null` or omitted. No extra rights-review form is
-required. For opt-in strict/practical, use the fields in
-[rights-clearance.md](rights-clearance.md).
+Unknown `original_source` may be `null` or omitted. Derived or redundant fields
+(`source`, `score_total`, `adjusted_score`, and zero `ubiquity_penalty`) may be
+omitted—the auditor derives them from `attribution_url` and `scores`—or included
+and verified for exact agreement. No extra rights-review form is required. For
+opt-in strict/practical, use the fields in [rights-clearance.md](rights-clearance.md).
 
 ## Placement logic
 

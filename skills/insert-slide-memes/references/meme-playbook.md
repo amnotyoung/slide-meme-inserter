@@ -35,7 +35,7 @@ of 2 describes suitability under this working mode; it does not claim clearance.
 
 Apply an additional `-1` ubiquity penalty when a template repeatedly appears as a generic answer across unrelated presentation topics. Common examples include `Confused Math Lady`, `Drake Hotline Bling`, and `This Is Fine`; treat these as illustrative, not as a permanent blacklist. Keep the penalty even when the template remains the best semantic fit.
 
-Record every dimension separately. Insert only candidates that passed every hard gate, have no zero in narrative value, template semantics, audience recognition, or caption clarity, and have an adjusted score of at least 12/14 with no unresolved safety concern.
+Record every dimension separately. Insert only candidates that passed every hard gate, have no zero in narrative value, template semantics, audience recognition, caption clarity, layout fit, or safety/rights, and have an adjusted score of at least 12/14 with no unresolved safety concern.
 
 Score novelty only after semantic precision and audience recognition pass. Freshness never compensates for obscurity, weak meaning, or identity risk.
 
@@ -125,10 +125,9 @@ discovery_source: "<trend index, search result, or community URL>"
 discovery_route: "regional-first"
 discovery_fallback_reason: "<why Imgflip is a poor discovery pool for this candidate>"
 humor_evidence: "<why the active format supports a concise joke for this slide>"
-semantic_sources:
-  - "<meaning or spread source>"
+semantic_source: "<meaning or spread source URL>"
 original_source: "<original URL when known; null or omitted in common-use when unknown>"
-asset_url: "<direct JPG, PNG, WebP, or GIF URL>"
+asset_source: "<direct JPG, PNG, WebP, or GIF URL>"
 rights_status: "<common-use-unverified, cleared, exception-reviewed, practical-reviewed, unclear, or user-provided-unverified>"
 use_modes: ["<known planned uses; omit with distribution when unknown in common-use>"]
 distribution: "<internal, external-limited, or public>"

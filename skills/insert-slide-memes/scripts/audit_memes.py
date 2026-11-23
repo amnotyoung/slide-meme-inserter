@@ -7,51 +7,98 @@ import argparse
 import base64
 import binascii
 import math
+import os
+from collections.abc import Sequence
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
-from audit_meme_plan import load_and_audit_plan
+from audit_meme_plan import _is_http_url, load_and_audit_plan
 
 
-SLIDE_TAGS = {"section", "article"}
+SLIDE_TAGS = {"section", "article", "div"}
+VOID_ELEMENTS = {
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
+}
 
 
 class DeckParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
+        self.source_file: Path | None = None
         self.slides: list[dict] = []
         self.slide_stack: list[int] = []
-        self.slide_tag_stack: list[bool] = []
         self.figure_stack: list[dict | None] = []
         self.memes: list[dict] = []
         self.attributions: list[dict] = []
-        self.attribution_depth = 0
-        self.active_attribution: dict | None = None
-        self.speaker_notes_stack: list[str] = []
+        self.active_attributions: list[dict] = []
+        self.active_figcaptions: list[dict] = []
+        self.speaker_notes_depth = 0
+        self.element_stack: list[dict] = []
+
+    def parse_file(self, path: Path) -> None:
+        self.source_file = path
+        self.slide_stack.clear()
+        self.figure_stack.clear()
+        self.active_attributions.clear()
+        self.active_figcaptions.clear()
+        self.speaker_notes_depth = 0
+        self.element_stack.clear()
+        self.feed(path.read_text(encoding="utf-8"))
+        self.close()
+
+    def _is_slide_element(
+        self,
+        tag: str,
+        classes: set[str],
+        attrs: dict[str, str | None],
+    ) -> bool:
+        if tag not in SLIDE_TAGS:
+            return False
+        explicit_slide = "slide" in classes or "data-slide" in attrs
+        if tag == "section":
+            return explicit_slide or not self.slide_stack
+        return explicit_slide
 
     def handle_starttag(self, tag: str, attrs_list: list[tuple[str, str | None]]) -> None:
         attrs = dict(attrs_list)
         classes = set((attrs.get("class") or "").split())
-        if "speaker-notes" in classes or "data-speaker-notes" in attrs:
-            self.speaker_notes_stack.append(tag)
+        is_void = tag in VOID_ELEMENTS
 
-        if tag in SLIDE_TAGS:
-            is_slide = tag == "section" or "slide" in classes or "data-slide" in attrs
-            self.slide_tag_stack.append(is_slide)
-            if is_slide:
-                slide = {
-                    "id": attrs.get("id") or f"slide-{len(self.slides) + 1}",
-                    "classes": classes,
-                    "memes": [],
-                }
-                self.slides.append(slide)
-                self.slide_stack.append(len(self.slides) - 1)
+        is_speaker_notes = "speaker-notes" in classes or "data-speaker-notes" in attrs
+        if is_speaker_notes and not is_void:
+            self.speaker_notes_depth += 1
 
-        if tag == "figure":
+        is_slide = self._is_slide_element(tag, classes, attrs)
+        if is_slide and not is_void:
+            slide = {
+                "id": attrs.get("id") or f"slide-{len(self.slides) + 1}",
+                "classes": classes,
+                "memes": [],
+                "source_file": self.source_file,
+            }
+            self.slides.append(slide)
+            self.slide_stack.append(len(self.slides) - 1)
+
+        is_figure = tag == "figure" and not is_void
+        if is_figure:
             if "slide-meme" in classes:
                 meme = {
                     "slide": self.slide_stack[-1] if self.slide_stack else None,
+                    "source_file": self.source_file,
                     "plan_id": attrs.get("data-meme-plan-id"),
                     "role": attrs.get("data-meme-role"),
                     "template": attrs.get("data-meme-template"),
@@ -59,6 +106,7 @@ class DeckParser(HTMLParser):
                     "origin": attrs.get("data-meme-origin"),
                     "images": [],
                     "has_caption": False,
+                    "caption_text": [],
                 }
                 self.memes.append(meme)
                 if self.slide_stack:
@@ -72,10 +120,20 @@ class DeckParser(HTMLParser):
                 {"src": attrs.get("src") or "", "alt": attrs.get("alt")}
             )
 
-        if tag == "figcaption" and self.figure_stack and self.figure_stack[-1] is not None:
-            self.figure_stack[-1]["has_caption"] = True
+        is_figcaption = (
+            tag == "figcaption"
+            and not is_void
+            and bool(self.figure_stack)
+            and self.figure_stack[-1] is not None
+        )
+        if is_figcaption:
+            meme = self.figure_stack[-1]
+            assert meme is not None
+            meme["has_caption"] = True
+            self.active_figcaptions.append(meme)
 
-        if "meme-attribution" in classes:
+        is_attribution = "meme-attribution" in classes
+        if is_attribution:
             containing_meme = (
                 self.figure_stack[-1]
                 if self.figure_stack and self.figure_stack[-1] is not None
@@ -88,7 +146,7 @@ class DeckParser(HTMLParser):
                 "location": attrs.get("data-meme-attribution-location")
                 or ("on-slide" if containing_meme else None),
                 "inside_figure": containing_meme is not None,
-                "inside_speaker_notes": bool(self.speaker_notes_stack),
+                "inside_speaker_notes": self.speaker_notes_depth > 0,
                 "inside_credits_slide": bool(
                     self.slide_stack
                     and self.slides[self.slide_stack[-1]]["classes"]
@@ -102,31 +160,60 @@ class DeckParser(HTMLParser):
                 "text": [],
             }
             self.attributions.append(attribution)
-            self.attribution_depth = 1
-            self.active_attribution = attribution
-        elif self.attribution_depth:
-            self.attribution_depth += 1
+            if not is_void:
+                self.active_attributions.append(attribution)
+
+        if not is_void:
+            self.element_stack.append(
+                {
+                    "tag": tag,
+                    "is_slide": is_slide,
+                    "is_speaker_notes": is_speaker_notes,
+                    "is_figure": is_figure,
+                    "is_figcaption": is_figcaption,
+                    "is_attribution": is_attribution,
+                }
+            )
 
     def handle_data(self, data: str) -> None:
-        if self.attribution_depth and self.active_attribution is not None and data.strip():
-            self.active_attribution["text"].append(data.strip())
+        stripped = data.strip()
+        if not stripped:
+            return
+        if self.active_attributions:
+            self.active_attributions[-1]["text"].append(stripped)
+        if self.active_figcaptions:
+            self.active_figcaptions[-1]["caption_text"].append(stripped)
 
     def handle_endtag(self, tag: str) -> None:
-        if self.attribution_depth:
-            self.attribution_depth -= 1
-            if self.attribution_depth == 0:
-                self.active_attribution = None
-        if tag == "figure" and self.figure_stack:
-            self.figure_stack.pop()
-        if tag in SLIDE_TAGS and self.slide_tag_stack:
-            if self.slide_tag_stack.pop() and self.slide_stack:
+        if tag in VOID_ELEMENTS:
+            return
+        match_index: int | None = None
+        for idx in range(len(self.element_stack) - 1, -1, -1):
+            if self.element_stack[idx]["tag"] == tag:
+                match_index = idx
+                break
+        if match_index is None:
+            return
+
+        while len(self.element_stack) > match_index:
+            frame = self.element_stack.pop()
+            if frame["is_attribution"] and self.active_attributions:
+                self.active_attributions.pop()
+            if frame["is_figcaption"] and self.active_figcaptions:
+                self.active_figcaptions.pop()
+            if frame["is_figure"] and self.figure_stack:
+                self.figure_stack.pop()
+            if frame["is_slide"] and self.slide_stack:
                 self.slide_stack.pop()
-        if self.speaker_notes_stack and self.speaker_notes_stack[-1] == tag:
-            self.speaker_notes_stack.pop()
+            if frame["is_speaker_notes"] and self.speaker_notes_depth > 0:
+                self.speaker_notes_depth -= 1
 
 
 def is_remote(src: str) -> bool:
-    return urlparse(src).scheme in {"http", "https"}
+    stripped = src.strip()
+    if stripped.startswith("//"):
+        return True
+    return urlparse(stripped).scheme.lower() in {"http", "https", "ftp"}
 
 
 def valid_embedded_image(src: str) -> bool:
@@ -139,15 +226,35 @@ def valid_embedded_image(src: str) -> bool:
         return False
 
 
+def _expand_html_paths(paths: Path | Sequence[Path]) -> list[Path]:
+    raw_paths = [paths] if isinstance(paths, Path) else list(paths)
+    expanded: list[Path] = []
+    for item in raw_paths:
+        resolved = item.resolve()
+        if resolved.is_dir():
+            expanded.extend(sorted(p.resolve() for p in resolved.glob("*.html")))
+        else:
+            expanded.append(resolved)
+    return expanded
+
+
 def audit(
-    path: Path,
+    path: Path | Sequence[Path],
     max_density: float,
     plan_path: Path | None = None,
 ) -> tuple[list[str], list[str], DeckParser]:
+    html_paths = _expand_html_paths(path)
     parser = DeckParser()
-    parser.feed(path.read_text(encoding="utf-8"))
     errors: list[str] = []
     warnings: list[str] = []
+
+    if not html_paths:
+        return ["No HTML files found to audit."], warnings, parser
+
+    for html_file in html_paths:
+        parser.parse_file(html_file)
+
+    deck_root = Path(os.path.commonpath([str(p.parent) for p in html_paths])).resolve()
 
     if not parser.slides:
         warnings.append("No slide sections detected; density and per-slide checks were skipped.")
@@ -187,26 +294,47 @@ def audit(
                     "use --plan to validate a credits-slide or speaker-notes attribution."
                 )
 
+        caption_norm = " ".join(" ".join(meme["caption_text"]).split())
+        base_dir = (meme["source_file"] or html_paths[0]).parent
         for image in meme["images"]:
             if image["alt"] is None:
                 errors.append(f"{label}: image is missing an alt attribute.")
-            src = image["src"]
+            else:
+                alt_norm = " ".join(image["alt"].split())
+                if alt_norm and caption_norm and alt_norm == caption_norm:
+                    warnings.append(
+                        f"{label}: image alt text duplicates figcaption; "
+                        "describe the visual instead."
+                    )
+            src = image["src"].strip()
             if not src:
                 errors.append(f"{label}: image has an empty src.")
             elif src.startswith("data:"):
                 if not valid_embedded_image(src):
                     errors.append(f"{label}: image has an invalid embedded data URL.")
             elif is_remote(src):
-                warnings.append(f"{label}: image uses a remote URL; download it locally.")
+                errors.append(f"{label}: image uses a remote URL; download it locally.")
             else:
-                local_path = (path.parent / src).resolve()
-                if not local_path.is_file():
-                    errors.append(f"{label}: local image not found: {src}")
+                raw_local = unquote(urlparse(src).path)
+                if not raw_local or Path(raw_local).is_absolute():
+                    errors.append(
+                        f"{label}: local image must use a relative path inside the deck: {src}"
+                    )
+                else:
+                    local_path = (base_dir / raw_local).resolve()
+                    if not local_path.is_relative_to(deck_root):
+                        errors.append(
+                            f"{label}: local image escapes deck directory: {src}"
+                        )
+                    elif not local_path.is_file():
+                        errors.append(f"{label}: local image not found: {src}")
 
     for index, attribution in enumerate(parser.attributions, 1):
         label = attribution["plan_id"] or f"attribution-{index}"
-        if attribution["tag"] != "a" or not attribution["href"]:
-            errors.append(f"{label}: .meme-attribution must be a link with an href.")
+        if attribution["tag"] != "a" or not _is_http_url(attribution["href"]):
+            errors.append(
+                f"{label}: .meme-attribution must be a link with a valid http(s) href."
+            )
         if not attribution["text"]:
             errors.append(f"{label}: .meme-attribution must contain text.")
 
@@ -228,12 +356,25 @@ def audit(
             for record in selected
             if isinstance(record.get("id"), str) and record["id"]
         }
+        slide_index_by_id = {
+            slide["id"]: idx for idx, slide in enumerate(parser.slides)
+        }
         html_by_id: dict[str, dict] = {}
         attributions_by_id: dict[str, list[dict]] = {}
-        for attribution in parser.attributions:
+        for index, attribution in enumerate(parser.attributions, 1):
             plan_id = attribution["plan_id"]
-            if isinstance(plan_id, str) and plan_id:
-                attributions_by_id.setdefault(plan_id, []).append(attribution)
+            if not isinstance(plan_id, str) or not plan_id:
+                errors.append(
+                    f"attribution-{index}: .meme-attribution is missing data-meme-plan-id."
+                )
+                continue
+            if plan_id not in selected_by_id:
+                errors.append(
+                    f"{plan_id}: orphan .meme-attribution does not match a selected placement."
+                )
+                continue
+            attributions_by_id.setdefault(plan_id, []).append(attribution)
+
         for index, meme in enumerate(parser.memes, 1):
             plan_id = meme["plan_id"]
             label = (
@@ -257,7 +398,7 @@ def audit(
             expected = {
                 "role": record.get("role"),
                 "template": record.get("template"),
-                "source": record.get("source"),
+                "source": record.get("source") or record.get("attribution_url"),
                 "origin": record.get("origin"),
             }
             for field, value in expected.items():
@@ -277,6 +418,21 @@ def audit(
                     f"{label}: meme is on slide {slide_id!r}; "
                     f"plan expects {record.get('slide_id')!r}."
                 )
+
+            if record.get("role") == "callback" and meme["slide"] is not None:
+                callback_to = record.get("callback_to")
+                if isinstance(callback_to, str) and callback_to:
+                    target_idx = slide_index_by_id.get(callback_to)
+                    if target_idx is None:
+                        errors.append(
+                            f"{label}: callback_to slide {callback_to!r} was not found in HTML."
+                        )
+                    elif target_idx >= meme["slide"]:
+                        errors.append(
+                            f"{label}: callback_to slide {callback_to!r} must appear "
+                            f"before {slide_id!r}."
+                        )
+
             matching_attributions = attributions_by_id.get(plan_id, [])
             if not matching_attributions:
                 errors.append(
@@ -349,7 +505,12 @@ def audit(
 
 def main() -> int:
     arg_parser = argparse.ArgumentParser(description=__doc__)
-    arg_parser.add_argument("html", type=Path, help="HTML slide deck to audit")
+    arg_parser.add_argument(
+        "html",
+        type=Path,
+        nargs="+",
+        help="One or more HTML slide files (or a directory of slide HTML files) to audit",
+    )
     arg_parser.add_argument(
         "--max-density",
         type=float,
@@ -373,11 +534,12 @@ def main() -> int:
 
     if not 0 < args.max_density <= 1:
         arg_parser.error("--max-density must be greater than 0 and at most 1")
-    if not args.html.is_file():
-        arg_parser.error(f"file not found: {args.html}")
+    for target in args.html:
+        if not target.exists():
+            arg_parser.error(f"file or directory not found: {target}")
 
     errors, warnings, parser = audit(
-        args.html.resolve(),
+        [target.resolve() for target in args.html],
         args.max_density,
         args.plan.resolve() if args.plan else None,
     )

@@ -141,7 +141,16 @@ CORE_SCORE_FIELDS = (
     "template_semantics",
     "audience_recognition",
     "caption_clarity",
+    "layout_fit",
+    "safety_rights",
 )
+ALLOWED_USER_LOCKED_FIELDS = {
+    "asset",
+    "template",
+    "caption",
+    "placement",
+    "layout",
+}
 
 
 def _is_nonempty_string(value: Any) -> bool:
@@ -153,10 +162,25 @@ def _required_string(record: dict[str, Any], field: str, label: str, errors: lis
         errors.append(f"{label}: missing or empty {field}.")
 
 
-def _is_imgflip_url(value: Any) -> bool:
+def _is_http_url(value: Any) -> bool:
     if not _is_nonempty_string(value):
         return False
-    hostname = (urlparse(value).hostname or "").lower()
+    parsed = urlparse(value.strip())
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _required_http_url(record: dict[str, Any], field: str, label: str, errors: list[str]) -> None:
+    value = record.get(field)
+    if not _is_nonempty_string(value):
+        errors.append(f"{label}: missing or empty {field}.")
+    elif not _is_http_url(value):
+        errors.append(f"{label}: {field} must be a valid http(s) URL, not {value!r}.")
+
+
+def _is_imgflip_url(value: Any) -> bool:
+    if not _is_http_url(value):
+        return False
+    hostname = (urlparse(value.strip()).hostname or "").lower()
     return hostname in {"imgflip.com", "www.imgflip.com"}
 
 
@@ -382,7 +406,12 @@ def _audit_practical_review(
             f"{label}: practical_review.no_recording_or_distribution must be true."
         )
     scores = record.get("scores")
-    if isinstance(scores, dict) and scores.get("safety_rights") != 1:
+    is_searched_asset = record.get("origin") == "searched" or (
+        record.get("origin") == "user-provided"
+        and isinstance(record.get("user_locked"), dict)
+        and record["user_locked"].get("asset") is not True
+    )
+    if is_searched_asset and isinstance(scores, dict) and scores.get("safety_rights") != 1:
         errors.append(
             f"{label}: practical-reviewed searched assets must score "
             "scores.safety_rights as 1, not as documented clearance."
@@ -429,23 +458,28 @@ def _audit_scores(record: dict[str, Any], label: str, errors: list[str]) -> None
         return
 
     total = sum(valid_scores.values())
-    declared_total = record.get("score_total")
-    if declared_total != total:
-        errors.append(
-            f"{label}: score_total is {declared_total!r}; expected {total} from dimensions."
-        )
+    if "score_total" in record and record.get("score_total") is not None:
+        declared_total = record.get("score_total")
+        if declared_total != total:
+            errors.append(
+                f"{label}: score_total is {declared_total!r}; expected {total} from dimensions."
+            )
 
-    penalty = record.get("ubiquity_penalty")
-    if not isinstance(penalty, int) or isinstance(penalty, bool) or penalty not in {0, 1}:
-        errors.append(f"{label}: ubiquity_penalty must be 0 or 1.")
-        return
+    if "ubiquity_penalty" in record and record.get("ubiquity_penalty") is not None:
+        penalty = record.get("ubiquity_penalty")
+        if not isinstance(penalty, int) or isinstance(penalty, bool) or penalty not in {0, 1}:
+            errors.append(f"{label}: ubiquity_penalty must be 0 or 1.")
+            return
+    else:
+        penalty = 0
 
     adjusted = total - penalty
-    if record.get("adjusted_score") != adjusted:
-        errors.append(
-            f"{label}: adjusted_score is {record.get('adjusted_score')!r}; "
-            f"expected {adjusted}."
-        )
+    if "adjusted_score" in record and record.get("adjusted_score") is not None:
+        if record.get("adjusted_score") != adjusted:
+            errors.append(
+                f"{label}: adjusted_score is {record.get('adjusted_score')!r}; "
+                f"expected {adjusted}."
+            )
     if adjusted < 12:
         errors.append(f"{label}: adjusted score {adjusted}/14 is below 12/14.")
 
@@ -477,6 +511,58 @@ def _audit_identity(record: dict[str, Any], label: str, errors: list[str]) -> No
             )
 
 
+def _audit_searched_asset(
+    record: dict[str, Any],
+    label: str,
+    rights_mode: str,
+    errors: list[str],
+) -> None:
+    asset_kind = record.get("asset_kind")
+    if asset_kind in DISALLOWED_SEARCHED_ASSET_KINDS:
+        errors.append(
+            f"{label}: searched {asset_kind} is not a meme asset; drop the candidate."
+        )
+    elif asset_kind not in ALLOWED_SEARCHED_ASSET_KINDS:
+        errors.append(
+            f"{label}: asset_kind must be one of "
+            f"{sorted(ALLOWED_SEARCHED_ASSET_KINDS)} for a searched candidate."
+        )
+
+    recognition_basis = record.get("recognition_basis")
+    if recognition_basis not in ALLOWED_RECOGNITION_BASES:
+        errors.append(
+            f"{label}: recognition_basis must be one of "
+            f"{sorted(ALLOWED_RECOGNITION_BASES)}; unsupported assumptions fail."
+        )
+    _required_string(record, "recognition_evidence", label, errors)
+    discovery_route = record.get("discovery_route")
+    if discovery_route not in ALLOWED_DISCOVERY_ROUTES:
+        errors.append(
+            f"{label}: discovery_route must be one of "
+            f"{sorted(ALLOWED_DISCOVERY_ROUTES)}."
+        )
+    _required_http_url(record, "discovery_source", label, errors)
+    _required_string(record, "humor_evidence", label, errors)
+    if discovery_route == "imgflip-first":
+        if not _is_imgflip_url(record.get("discovery_source")):
+            errors.append(
+                f"{label}: imgflip-first discovery_source must use imgflip.com."
+            )
+    elif discovery_route in {"regional-first", "fallback-other"}:
+        _required_string(
+            record,
+            "discovery_fallback_reason",
+            label,
+            errors,
+        )
+    _required_http_url(record, "semantic_source", label, errors)
+    if rights_mode != "common-use":
+        _required_string(record, "original_source", label, errors)
+    _required_http_url(record, "asset_source", label, errors)
+    _audit_hard_gates(record, label, HARD_GATES, errors)
+    _audit_scores(record, label, errors)
+
+
 def audit_plan_data(
     plan: Any,
 ) -> tuple[list[str], list[str], list[dict[str, Any]]]:
@@ -500,6 +586,7 @@ def audit_plan_data(
         return errors + ["Plan root: placements must be an array."], warnings, []
 
     seen_ids: set[str] = set()
+    seen_selected_slides: dict[str, str] = {}
     selected: list[dict[str, Any]] = []
 
     for index, record in enumerate(placements, 1):
@@ -526,6 +613,18 @@ def audit_plan_data(
                 warnings.append(f"{label}: dropped placement should record drop_reason.")
             continue
         if status == "provisional":
+            if "origin" in record and record["origin"] not in ALLOWED_ORIGINS:
+                errors.append(f"{label}: invalid origin {record['origin']!r}.")
+            if "role" in record and record["role"] not in ALLOWED_ROLES:
+                errors.append(f"{label}: invalid role {record['role']!r}.")
+            if (
+                "rights_status" in record
+                and record["rights_status"] not in ALLOWED_RIGHTS_STATUSES
+            ):
+                errors.append(
+                    f"{label}: rights_status must be one of "
+                    f"{sorted(ALLOWED_RIGHTS_STATUSES)}."
+                )
             continue
 
         selected.append(record)
@@ -535,30 +634,48 @@ def audit_plan_data(
             "intended_response",
             "template",
             "caption",
-            "source",
             "attribution_text",
-            "attribution_url",
             "attribution_location",
             "layout",
             "risk",
         ):
             _required_string(record, field, label, errors)
 
-        if (
-            _is_nonempty_string(record.get("source"))
-            and _is_nonempty_string(record.get("attribution_url"))
-            and record["source"] != record["attribution_url"]
-        ):
-            errors.append(
-                f"{label}: source must equal attribution_url so HTML exposes the "
-                "recorded attribution source."
-            )
+        _required_http_url(record, "attribution_url", label, errors)
+
+        slide_id = record.get("slide_id")
+        if _is_nonempty_string(slide_id):
+            if slide_id in seen_selected_slides:
+                errors.append(
+                    f"{label}: slide_id {slide_id!r} already has selected placement "
+                    f"{seen_selected_slides[slide_id]!r}; limit is one meme per slide."
+                )
+            else:
+                seen_selected_slides[slide_id] = label
+
+        if "source" in record and record.get("source") is not None:
+            if not _is_nonempty_string(record.get("source")):
+                errors.append(f"{label}: source must be omitted or a non-empty http(s) URL.")
+            elif (
+                _is_nonempty_string(record.get("attribution_url"))
+                and record["source"] != record["attribution_url"]
+            ):
+                errors.append(
+                    f"{label}: source must equal attribution_url so HTML exposes the "
+                    "recorded attribution source."
+                )
 
         role = record.get("role")
         if role not in ALLOWED_ROLES:
             errors.append(f"{label}: invalid role {role!r}.")
-        elif role == "callback" and not _is_nonempty_string(record.get("callback_to")):
-            errors.append(f"{label}: callback requires an earlier callback_to slide ID.")
+        elif role == "callback":
+            callback_to = record.get("callback_to")
+            if not _is_nonempty_string(callback_to):
+                errors.append(f"{label}: callback requires an earlier callback_to slide ID.")
+            elif _is_nonempty_string(slide_id) and callback_to == slide_id:
+                errors.append(
+                    f"{label}: callback_to must reference an earlier slide, not {slide_id!r}."
+                )
 
         origin = record.get("origin")
         if origin not in ALLOWED_ORIGINS:
@@ -617,62 +734,36 @@ def audit_plan_data(
         _audit_identity(record, label, errors)
 
         if origin == "searched":
-            asset_kind = record.get("asset_kind")
-            if asset_kind in DISALLOWED_SEARCHED_ASSET_KINDS:
-                errors.append(
-                    f"{label}: searched {asset_kind} is not a meme asset; drop the candidate."
-                )
-            elif asset_kind not in ALLOWED_SEARCHED_ASSET_KINDS:
-                errors.append(
-                    f"{label}: asset_kind must be one of "
-                    f"{sorted(ALLOWED_SEARCHED_ASSET_KINDS)} for a searched candidate."
-                )
-
-            recognition_basis = record.get("recognition_basis")
-            if recognition_basis not in ALLOWED_RECOGNITION_BASES:
-                errors.append(
-                    f"{label}: recognition_basis must be one of "
-                    f"{sorted(ALLOWED_RECOGNITION_BASES)}; unsupported assumptions fail."
-                )
-            _required_string(record, "recognition_evidence", label, errors)
-            discovery_route = record.get("discovery_route")
-            if discovery_route not in ALLOWED_DISCOVERY_ROUTES:
-                errors.append(
-                    f"{label}: discovery_route must be one of "
-                    f"{sorted(ALLOWED_DISCOVERY_ROUTES)}."
-                )
-            _required_string(record, "discovery_source", label, errors)
-            _required_string(record, "humor_evidence", label, errors)
-            if discovery_route == "imgflip-first":
-                if not _is_imgflip_url(record.get("discovery_source")):
-                    errors.append(
-                        f"{label}: imgflip-first discovery_source must use imgflip.com."
-                    )
-            elif discovery_route in {"regional-first", "fallback-other"}:
-                _required_string(
-                    record,
-                    "discovery_fallback_reason",
-                    label,
-                    errors,
-                )
-            _required_string(record, "semantic_source", label, errors)
-            if rights_mode != "common-use":
-                _required_string(record, "original_source", label, errors)
-            _required_string(record, "asset_source", label, errors)
-            _audit_hard_gates(record, label, HARD_GATES, errors)
-            _audit_scores(record, label, errors)
+            _audit_searched_asset(record, label, rights_mode, errors)
         else:
             user_locked = record.get("user_locked")
-            if not isinstance(user_locked, dict) or user_locked.get("asset") is not True:
+            if not isinstance(user_locked, dict):
                 errors.append(
-                    f"{label}: selected user-provided placement must lock the exact asset."
+                    f"{label}: selected user-provided placement requires a user_locked object."
                 )
-            _audit_hard_gates(
-                record,
-                label,
-                USER_PROVIDED_REQUIRED_GATES,
-                errors,
-            )
+            else:
+                unknown_locked = sorted(set(user_locked) - ALLOWED_USER_LOCKED_FIELDS)
+                if unknown_locked:
+                    errors.append(
+                        f"{label}: user_locked has unsupported keys {unknown_locked}; "
+                        f"allowed keys are {sorted(ALLOWED_USER_LOCKED_FIELDS)}."
+                    )
+                if not any(user_locked.get(k) is True for k in ALLOWED_USER_LOCKED_FIELDS):
+                    errors.append(
+                        f"{label}: selected user-provided placement must lock at least "
+                        "one user-supplied field (asset, template, caption, placement, or layout)."
+                    )
+                if user_locked.get("asset") is True:
+                    _audit_hard_gates(
+                        record,
+                        label,
+                        USER_PROVIDED_REQUIRED_GATES,
+                        errors,
+                    )
+                else:
+                    # User supplied a template name, caption, or placement without
+                    # an exact file/URL, so the asset itself was searched.
+                    _audit_searched_asset(record, label, rights_mode, errors)
 
     return errors, warnings, selected
 
