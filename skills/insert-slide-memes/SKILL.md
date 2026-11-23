@@ -69,7 +69,7 @@ choice and record it as root-level `rights_mode` in the JSON plan.
    - Preserve `data-meme-source` metadata in either case.
 7. Render every changed slide and its neighbors at the target viewport and one smaller viewport.
 8. Verify keyboard navigation, image loading, overflow, and browser console output.
-9. Run `python3 <skill-root>/scripts/audit_memes.py path/to/deck.html --plan path/to/meme-plan.json --strict`.
+9. Run `python3 <skill-root>/scripts/audit_memes.py path/to/deck.html --plan path/to/meme-plan.json --strict` (or pass multiple slide files / a slide directory for multi-file decks).
 10. Report changed slides, why each joke belongs, asset sources, reuse status, and packaging.
 
 ## Mode: `plan-and-build`

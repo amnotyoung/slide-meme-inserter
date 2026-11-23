@@ -52,7 +52,7 @@ A user-provided exact asset may bypass the searched-candidate established-format
 
 ### Template name only
 
-Treat the named template as locked but search for a suitable source and asset. Ask before switching templates.
+Treat the named template as locked (`origin: "user-provided"` with `user_locked: {"template": true, "asset": false}`) and search for a suitable source and asset using the searched-candidate discovery, hard-gate, and scoring rules. Ask before switching templates.
 
 ## Caption and placement
 
@@ -76,7 +76,7 @@ communicative_job: "Use the supplied reaction at the requested beat"
 intended_response: "The user's intended reaction"
 template: "User-provided exact asset"
 caption: "User-supplied or approved caption"
-asset: "/path/or/source-url"
+asset_source: "/path/or/source-url"
 user_locked:
   asset: true
   placement: true

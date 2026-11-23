@@ -573,6 +573,100 @@ class MemePlanAuditTests(unittest.TestCase):
         self.assertIn("searched wallpaper is not a meme asset", joined)
         self.assertIn("unsupported assumptions fail", joined)
 
+    def test_safety_rights_or_layout_fit_zero_is_rejected(self) -> None:
+        for field in ("safety_rights", "layout_fit"):
+            with self.subTest(field=field):
+                plan = common_use_plan()
+                placement = plan["placements"][0]
+                for key in placement["scores"]:
+                    placement["scores"][key] = 2
+                placement["scores"][field] = 0
+                placement["score_total"] = 12
+                placement["adjusted_score"] = 12
+                errors, _, _ = audit_plan_data(plan)
+                self.assertTrue(
+                    any(f"core score {field} is 0" in error for error in errors)
+                )
+
+    def test_duplicate_selected_slide_id_is_rejected(self) -> None:
+        plan = common_use_plan()
+        second = json.loads(json.dumps(plan["placements"][0]))
+        second["id"] = "m02"
+        plan["placements"].append(second)
+        errors, _, _ = audit_plan_data(plan)
+        self.assertTrue(
+            any("already has selected placement" in error for error in errors)
+        )
+
+    def test_callback_to_same_slide_is_rejected(self) -> None:
+        plan = common_use_plan()
+        placement = plan["placements"][0]
+        placement["role"] = "callback"
+        placement["callback_to"] = placement["slide_id"]
+        errors, _, _ = audit_plan_data(plan)
+        self.assertTrue(
+            any("must reference an earlier slide" in error for error in errors)
+        )
+
+    def test_non_http_attribution_and_source_urls_are_rejected(self) -> None:
+        for bad_url in ("internet", "javascript:alert(1)", "user-provided"):
+            with self.subTest(bad_url=bad_url):
+                plan = common_use_plan()
+                placement = plan["placements"][0]
+                placement["attribution_url"] = bad_url
+                placement["source"] = bad_url
+                errors, _, _ = audit_plan_data(plan)
+                self.assertTrue(
+                    any("must be a valid http(s) URL" in error for error in errors)
+                )
+
+    def test_user_provided_template_only_runs_searched_asset_checks(self) -> None:
+        plan = common_use_plan()
+        placement = plan["placements"][0]
+        placement["origin"] = "user-provided"
+        placement["user_locked"] = {"template": True, "asset": False}
+        errors, warnings, selected = audit_plan_data(plan)
+        self.assertEqual(errors, [])
+        self.assertEqual(warnings, [])
+        self.assertEqual([record["id"] for record in selected], ["m01"])
+
+        placement.pop("discovery_source")
+        errors, _, _ = audit_plan_data(plan)
+        self.assertTrue(any("discovery_source" in error for error in errors))
+
+    def test_derived_score_and_redundant_source_fields_can_be_omitted(self) -> None:
+        plan = common_use_plan()
+        placement = plan["placements"][0]
+        for field in ("source", "score_total", "adjusted_score", "ubiquity_penalty"):
+            placement.pop(field, None)
+        errors, warnings, selected = audit_plan_data(plan)
+        self.assertEqual(errors, [])
+        self.assertEqual(warnings, [])
+        self.assertEqual([record["id"] for record in selected], ["m01"])
+
+    def test_practical_user_provided_with_scores_does_not_false_positive(self) -> None:
+        plan = valid_plan()
+        plan["rights_mode"] = "practical"
+        placement = plan["placements"][0]
+        placement["origin"] = "user-provided"
+        placement["rights_status"] = "practical-reviewed"
+        placement["attribution_location"] = "speaker-notes"
+        placement["user_locked"] = {"asset": True}
+        placement.pop("legal_basis")
+        placement["practical_review"] = {
+            "transformative_context": "Contextual reaction.",
+            "necessity": "One image.",
+            "amount_resolution": "Low resolution.",
+            "market_substitution": "No substitute.",
+            "moral_personality_risk": "Reviewed.",
+            "attribution_method": "speaker-notes",
+            "checked_at": "2026-07-25",
+            "no_recording_or_distribution": True,
+        }
+        errors, warnings, _ = audit_plan_data(plan)
+        self.assertEqual(errors, [])
+        self.assertEqual(warnings, [])
+
 
 class HtmlPlanCrossCheckTests(unittest.TestCase):
     def test_common_use_public_deck_with_notes_passes_without_clearance(self) -> None:
@@ -857,6 +951,265 @@ class HtmlPlanCrossCheckTests(unittest.TestCase):
             self.assertIn("plan expects 'reaction'", joined)
             self.assertIn("plan expects 'Licensed Reaction Template'", joined)
             self.assertIn("plan expects 'https://example.com/license'", joined)
+
+    def test_nested_div_inside_speaker_notes_preserves_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            plan = common_use_plan()
+            placement = plan["placements"][0]
+            placement["attribution_location"] = "speaker-notes"
+            plan_path = directory / "meme-plan.json"
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+            (directory / "meme.jpg").write_bytes(b"test-image")
+            html_path = directory / "deck.html"
+            html_path.write_text(
+                f"""
+                <section id="s08">
+                  <figure class="slide-meme" data-meme-plan-id="m01"
+                    data-meme-role="reaction" data-meme-template="Two Buttons"
+                    data-meme-source="{placement['attribution_url']}" data-meme-origin="searched">
+                    <img src="meme.jpg" alt="A person hesitates between two buttons" />
+                    <figcaption>{placement['caption']}</figcaption>
+                  </figure>
+                  <div class="speaker-notes">
+                    <div class="notes-body"><p>Talking points</p></div>
+                    <a class="meme-attribution" data-meme-plan-id="m01"
+                      data-meme-attribution-location="speaker-notes"
+                      href="{placement['attribution_url']}">{placement['attribution_text']}</a>
+                  </div>
+                </section>
+                """,
+                encoding="utf-8",
+            )
+            errors, warnings, _ = audit(html_path, 0.20, plan_path)
+            self.assertEqual(errors, [])
+            self.assertEqual(warnings, [])
+
+    def test_void_element_inside_attribution_does_not_leak_text(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            plan = common_use_plan()
+            placement = plan["placements"][0]
+            placement["attribution_location"] = "on-slide"
+            plan_path = directory / "meme-plan.json"
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+            (directory / "meme.jpg").write_bytes(b"test-image")
+            html_path = directory / "deck.html"
+            html_path.write_text(
+                f"""
+                <section id="s08">
+                  <figure class="slide-meme" data-meme-plan-id="m01"
+                    data-meme-role="reaction" data-meme-template="Two Buttons"
+                    data-meme-source="{placement['attribution_url']}" data-meme-origin="searched">
+                    <img src="meme.jpg" alt="A person hesitates between two buttons" />
+                    <figcaption>{placement['caption']}</figcaption>
+                    <a class="meme-attribution" href="{placement['attribution_url']}">
+                      Two Buttons —<br>Imgflip template page
+                    </a>
+                  </figure>
+                  <p>Trailing body text that must not leak into attribution</p>
+                </section>
+                """,
+                encoding="utf-8",
+            )
+            errors, warnings, _ = audit(html_path, 0.20, plan_path)
+            self.assertEqual(errors, [])
+            self.assertEqual(warnings, [])
+
+    def test_div_slides_and_nested_layout_sections_are_handled(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            plan = common_use_plan()
+            placement = plan["placements"][0]
+            placement["attribution_location"] = "on-slide"
+            plan_path = directory / "meme-plan.json"
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+            (directory / "meme.jpg").write_bytes(b"test-image")
+            html_path = directory / "deck.html"
+            html_path.write_text(
+                f"""
+                <div class="slide" id="s08">
+                  <section class="layout-column">
+                    <figure class="slide-meme" data-meme-plan-id="m01"
+                      data-meme-role="reaction" data-meme-template="Two Buttons"
+                      data-meme-source="{placement['attribution_url']}" data-meme-origin="searched">
+                      <img src="meme.jpg" alt="A person hesitates between two buttons" />
+                      <figcaption>{placement['caption']}</figcaption>
+                      <a class="meme-attribution" href="{placement['attribution_url']}">
+                        {placement['attribution_text']}
+                      </a>
+                    </figure>
+                  </section>
+                </div>
+                """,
+                encoding="utf-8",
+            )
+            errors, warnings, parser = audit(html_path, 0.20, plan_path)
+            self.assertEqual(errors, [])
+            self.assertEqual(warnings, [])
+            self.assertEqual(len(parser.slides), 1)
+            self.assertEqual(parser.slides[0]["id"], "s08")
+
+    def test_multifile_deck_with_separate_credits_slide_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            plan = common_use_plan()
+            placement = plan["placements"][0]
+            placement["attribution_location"] = "credits-slide"
+            plan_path = directory / "meme-plan.json"
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+            (directory / "meme.jpg").write_bytes(b"test-image")
+            slide1 = directory / "slide-01.html"
+            slide1.write_text('<section id="s01"><h1>Intro</h1></section>', encoding="utf-8")
+            slide2 = directory / "slide-08.html"
+            slide2.write_text(
+                f"""
+                <section id="s08">
+                  <figure class="slide-meme" data-meme-plan-id="m01"
+                    data-meme-role="reaction" data-meme-template="Two Buttons"
+                    data-meme-source="{placement['attribution_url']}" data-meme-origin="searched">
+                    <img src="meme.jpg" alt="A person hesitates between two buttons" />
+                    <figcaption>{placement['caption']}</figcaption>
+                  </figure>
+                </section>
+                """,
+                encoding="utf-8",
+            )
+            slide3 = directory / "slide-99.html"
+            slide3.write_text(
+                f"""
+                <section id="credits" class="credits-slide">
+                  <a class="meme-attribution" data-meme-plan-id="m01"
+                    data-meme-attribution-location="credits-slide"
+                    href="{placement['attribution_url']}">{placement['attribution_text']}</a>
+                </section>
+                """,
+                encoding="utf-8",
+            )
+            errors, warnings, parser = audit([slide1, slide2, slide3], 0.50, plan_path)
+            self.assertEqual(errors, [])
+            self.assertEqual(warnings, [])
+            self.assertEqual(len(parser.slides), 3)
+
+    def test_remote_hotlink_and_protocol_relative_urls_are_errors(self) -> None:
+        for remote_src in ("https://cdn.example.com/meme.jpg", "//cdn.example.com/meme.jpg"):
+            with self.subTest(remote_src=remote_src):
+                with tempfile.TemporaryDirectory() as tmp:
+                    html_path = Path(tmp) / "deck.html"
+                    html_path.write_text(
+                        f"""
+                        <section id="s01">
+                          <figure class="slide-meme" data-meme-role="reaction"
+                            data-meme-source="https://example.com" data-meme-origin="searched">
+                            <img src="{remote_src}" alt="A person hesitates" />
+                            <figcaption>Caption</figcaption>
+                            <a class="meme-attribution" href="https://example.com">Source</a>
+                          </figure>
+                        </section>
+                        """,
+                        encoding="utf-8",
+                    )
+                    errors, _, _ = audit(html_path, 0.20)
+                    self.assertTrue(
+                        any("remote URL" in error for error in errors)
+                    )
+
+    def test_local_image_query_string_and_path_traversal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            deck_dir = root / "deck"
+            deck_dir.mkdir()
+            (deck_dir / "my meme.jpg").write_bytes(b"test-image")
+            (root / "outside.jpg").write_bytes(b"outside")
+            html_path = deck_dir / "slides.html"
+            html_path.write_text(
+                """
+                <section id="s01">
+                  <figure class="slide-meme" data-meme-role="reaction"
+                    data-meme-source="https://example.com" data-meme-origin="searched">
+                    <img src="my%20meme.jpg?v=2#top" alt="A person hesitates" />
+                    <figcaption>Caption</figcaption>
+                    <a class="meme-attribution" href="https://example.com">Source</a>
+                  </figure>
+                </section>
+                """,
+                encoding="utf-8",
+            )
+            errors, warnings, _ = audit(html_path, 0.20)
+            self.assertEqual(errors, [])
+            self.assertEqual(warnings, [])
+
+            html_path.write_text(
+                html_path.read_text(encoding="utf-8").replace(
+                    "my%20meme.jpg?v=2#top", "../outside.jpg"
+                ),
+                encoding="utf-8",
+            )
+            errors, _, _ = audit(html_path, 0.20)
+            self.assertTrue(
+                any("escapes deck directory" in error for error in errors)
+            )
+
+    def test_orphan_attribution_and_callback_order_are_checked(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            plan = common_use_plan()
+            placement = plan["placements"][0]
+            placement["role"] = "callback"
+            placement["callback_to"] = "s10"
+            placement["attribution_location"] = "on-slide"
+            plan_path = directory / "meme-plan.json"
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+            (directory / "meme.jpg").write_bytes(b"test-image")
+            html_path = directory / "deck.html"
+            html_path.write_text(
+                f"""
+                <section id="s08">
+                  <figure class="slide-meme" data-meme-plan-id="m01"
+                    data-meme-role="callback" data-meme-template="Two Buttons"
+                    data-meme-source="{placement['attribution_url']}" data-meme-origin="searched">
+                    <img src="meme.jpg" alt="A person hesitates between two buttons" />
+                    <figcaption>{placement['caption']}</figcaption>
+                    <a class="meme-attribution" href="{placement['attribution_url']}">
+                      {placement['attribution_text']}
+                    </a>
+                  </figure>
+                </section>
+                <section id="s10">
+                  <a class="meme-attribution" data-meme-plan-id="m99"
+                    href="https://example.com/orphan">Orphan</a>
+                </section>
+                """,
+                encoding="utf-8",
+            )
+            errors, _, _ = audit(html_path, 0.50, plan_path)
+            joined = "\n".join(errors)
+            self.assertIn("callback_to slide 's10' must appear before 's08'", joined)
+            self.assertIn("orphan .meme-attribution", joined)
+
+    def test_duplicate_alt_and_figcaption_triggers_warning(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            (directory / "meme.jpg").write_bytes(b"test-image")
+            html_path = directory / "deck.html"
+            html_path.write_text(
+                """
+                <section id="s01">
+                  <figure class="slide-meme" data-meme-role="reaction"
+                    data-meme-source="https://example.com" data-meme-origin="searched">
+                    <img src="meme.jpg" alt="Same punchline" />
+                    <figcaption>Same punchline</figcaption>
+                    <a class="meme-attribution" href="https://example.com">Source</a>
+                  </figure>
+                </section>
+                """,
+                encoding="utf-8",
+            )
+            errors, warnings, _ = audit(html_path, 0.20)
+            self.assertEqual(errors, [])
+            self.assertTrue(
+                any("alt text duplicates figcaption" in warning for warning in warnings)
+            )
 
 
 class DensityAuditTests(unittest.TestCase):
